@@ -1,0 +1,1552 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SFT3033 Mekanik Interaktif</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Lexend:wght@300..700&family=STIX+Two+Text:ital,wght@0,400;0,600;1,400;1,600&display=swap" rel="stylesheet">
+<style>
+/* Plan: one study world — cool paper background, ink navy, one accent per chapter (blue / orange / teal).
+   Layout: full-height app, top chapter tabs, one slide card at a time, big bottom nav for thumbs. */
+:root{
+  --bg:#E8EEF5; --surface:#FFFFFF; --ink:#13233A; --muted:#4F6075; --line:#D2DBE6;
+  --good:#17804F; --good-soft:#DDF3E7; --bad:#BE3229; --bad-soft:#FBE3E1; --warn:#8A5A00; --warn-soft:#FFF1CF;
+  --acc:#1E63D6; --acc-ink:#174EA8; --acc-soft:#E2ECFB;
+  --display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body:"Lexend", "Segoe UI", system-ui, sans-serif;
+  --math:"STIX Two Text", "Cambria Math", Georgia, serif;
+  color-scheme: light;
+}
+body[data-ch="2"]{ --acc:#DD5F0E; --acc-ink:#A3440A; --acc-soft:#FDEADB; }
+body[data-ch="3"]{ --acc:#0E8C6C; --acc-ink:#0A6B53; --acc-soft:#D9F2EA; }
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.6;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.app{height:100%;display:flex;flex-direction:column}
+
+/* top bar */
+.top{display:flex;align-items:center;gap:12px;padding:10px 16px;background:var(--surface);border-bottom:1px solid var(--line)}
+.brand{display:flex;flex-direction:column;line-height:1.1;min-width:max-content}
+.brand .code{font-family:var(--display);font-weight:800;font-size:18px;color:var(--acc-ink)}
+.brand .bname{font-size:12px;color:var(--muted)}
+.tabs{display:flex;gap:6px;flex:1;overflow-x:auto;scrollbar-width:none}
+.tab{border:1.5px solid var(--line);background:var(--surface);border-radius:12px;padding:6px 12px;display:flex;flex-direction:column;align-items:flex-start;line-height:1.2;min-width:max-content}
+.tab .tn{font-weight:700;font-size:14px}
+.tab .tt{font-size:12px;color:var(--muted)}
+.tab.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.tab.on .tt{color:#ffffffd9}
+.menu-btn{border:1.5px solid var(--line);background:var(--surface);border-radius:12px;width:44px;height:44px;font-size:20px}
+.progress{height:5px;background:var(--line)}
+.bar{height:100%;width:0;background:var(--acc);transition:width .35s ease}
+
+/* stage */
+.stage{flex:1;overflow:hidden;position:relative}
+.slide{position:absolute;inset:0;overflow-y:auto;padding:22px 16px 40px;display:none}
+.slide.on{display:block;animation:slideIn .35s ease both}
+.slide.on.back{animation-name:slideInBack}
+@keyframes slideIn{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:none}}
+@keyframes slideInBack{from{opacity:0;transform:translateX(-24px)}to{opacity:1;transform:none}}
+.inner{max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+.eyebrow{display:inline-flex;align-self:flex-start;align-items:center;gap:8px;font-size:13px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--acc-ink);background:var(--acc-soft);padding:4px 12px;border-radius:999px}
+h1,h2,h3{font-family:var(--display);line-height:1.15;margin:0;text-wrap:balance}
+h1{font-size:clamp(34px,6vw,56px);font-weight:800;letter-spacing:-.01em}
+h2{font-size:clamp(26px,4.4vw,38px);font-weight:750}
+h3{font-size:20px;font-weight:700}
+p{margin:0}
+.lead{font-size:19px;color:var(--muted);max-width:65ch}
+.hl{background:linear-gradient(transparent 58%, var(--acc-soft) 58%);font-weight:600}
+.acc{color:var(--acc-ink);font-weight:600}
+.m{font-family:var(--math);font-size:1.12em;white-space:nowrap}
+.m i{font-style:italic}
+sub,sup{font-size:.7em;line-height:0}
+
+/* blocks */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:18px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:2px}
+.tile .big{font-family:var(--display);font-size:26px;font-weight:800;color:var(--acc-ink);line-height:1.1}
+.tile .sm{font-size:14px;color:var(--muted)}
+.formula{background:var(--acc-soft);border-radius:16px;padding:16px 18px;text-align:center;font-family:var(--math);font-size:28px;line-height:1.5}
+.formula small{display:block;font-family:var(--body);font-size:14px;color:var(--muted)}
+.tip,.warn,.def{border-radius:16px;padding:14px 16px;display:flex;gap:12px;align-items:flex-start}
+.tip{background:var(--good-soft)}
+.warn{background:var(--warn-soft)}
+.def{background:var(--surface);border:2px solid var(--acc)}
+.tag{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;border-radius:8px;padding:3px 8px;white-space:nowrap;align-self:flex-start}
+.tip .tag{background:var(--good);color:#fff}
+.warn .tag{background:var(--warn);color:#fff}
+.def .tag{background:var(--acc);color:#fff}
+.list{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:6px}
+table.t{width:100%;border-collapse:collapse;background:var(--surface);border-radius:14px;overflow:hidden;font-size:15px}
+.t th{background:var(--acc);color:#fff;text-align:left;padding:9px 12px;font-weight:600}
+.t td{padding:9px 12px;border-top:1px solid var(--line);vertical-align:top}
+.tbl-wrap{overflow-x:auto;border-radius:14px;border:1px solid var(--line)}
+.vs{display:grid;grid-template-columns:1fr 1fr;border-radius:16px;overflow:hidden;border:1px solid var(--line)}
+.vs > div{padding:14px 16px;background:var(--surface)}
+.vs > div:nth-child(odd){border-right:1px solid var(--line)}
+.vs .vh{font-family:var(--display);font-weight:800;font-size:20px;background:var(--acc-soft)}
+.vs > div:nth-child(n+3){border-top:1px solid var(--line)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1.5px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 14px;font-size:15px}
+
+/* cover */
+.cover{min-height:100%;display:flex;flex-direction:column;justify-content:center;gap:18px}
+.cover .num{font-family:var(--display);font-size:clamp(80px,16vw,150px);font-weight:800;color:var(--acc);line-height:.9}
+.outcomes{display:grid;gap:10px}
+.outcomes div{display:flex;gap:12px;align-items:flex-start;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.outcomes b{font-family:var(--display);color:var(--acc-ink);font-size:20px;min-width:24px}
+.howto{font-size:15px;color:var(--muted)}
+
+/* steps */
+.steps{display:flex;flex-direction:column;gap:10px}
+.step{display:none;gap:12px;align-items:flex-start;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--acc);border-radius:12px;padding:12px 14px;animation:pop .3s ease both}
+.step.show{display:flex}
+.step .sn{font-family:var(--display);font-weight:800;color:#fff;background:var(--acc);border-radius:999px;min-width:28px;height:28px;display:grid;place-items:center;font-size:15px}
+.step.ans{border-left-color:var(--good);background:var(--good-soft)}
+.step.ans .sn{background:var(--good)}
+@keyframes pop{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.btnrow{display:flex;gap:10px;flex-wrap:wrap}
+.btn{border:none;background:var(--acc);color:#fff;border-radius:12px;padding:11px 18px;font-weight:600;font-size:16px}
+.btn.ghost{background:var(--surface);color:var(--acc-ink);border:1.5px solid var(--acc)}
+.btn:disabled{opacity:.45;cursor:default}
+.q-head{display:flex;flex-direction:column;gap:6px}
+.given{display:flex;flex-wrap:wrap;gap:8px}
+.given span{background:var(--acc-soft);border-radius:10px;padding:4px 10px;font-family:var(--math);font-size:17px}
+
+/* quiz */
+.quiz{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.quiz .qn{font-size:13px;font-weight:700;color:var(--acc-ink);text-transform:uppercase;letter-spacing:.05em}
+.quiz .qt{font-weight:600;font-size:18px}
+.opts{display:grid;gap:8px}
+.opt{text-align:left;border:1.5px solid var(--line);background:var(--bg);border-radius:12px;padding:11px 14px;display:flex;gap:10px;align-items:center;font-size:16px}
+.opt .k{font-weight:700;width:26px;height:26px;border-radius:8px;background:var(--surface);display:grid;place-items:center;flex:none;font-size:14px;border:1px solid var(--line)}
+.opt.right{border-color:var(--good);background:var(--good-soft)}
+.opt.wrong{border-color:var(--bad);background:var(--bad-soft)}
+.opt[disabled]{cursor:default}
+.fb{display:none;border-radius:12px;padding:10px 14px;font-size:15px}
+.fb.ok{display:block;background:var(--good-soft)}
+.fb.no{display:block;background:var(--bad-soft)}
+.score{font-family:var(--display);font-size:22px;font-weight:800;color:var(--acc-ink)}
+
+/* widgets */
+.widget{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.wtitle{display:flex;align-items:center;gap:8px;font-weight:700;font-size:16px}
+.wtitle::before{content:"";width:10px;height:10px;border-radius:3px;background:var(--acc)}
+.ctrl{display:grid;grid-template-columns:minmax(110px,max-content) 1fr 76px;align-items:center;gap:10px;font-size:15px}
+.ctrl output{font-family:var(--math);font-size:18px;text-align:right;font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--acc);height:28px}
+input[type=number],input[type=text],select{font:inherit;border:1.5px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--bg);color:var(--ink);min-width:0}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.readout{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
+.ro{background:var(--bg);border-radius:12px;padding:8px 12px}
+.ro .l{font-size:13px;color:var(--muted)}
+.ro .v{font-family:var(--math);font-size:21px;font-variant-numeric:tabular-nums}
+.verdict{border-radius:12px;padding:10px 14px;font-weight:600}
+.verdict.ok{background:var(--good-soft);color:var(--good)}
+.verdict.no{background:var(--bad-soft);color:var(--bad)}
+.verdict.mid{background:var(--warn-soft);color:var(--warn)}
+.work{background:var(--bg);border-radius:12px;padding:10px 14px;font-family:var(--math);font-size:18px;line-height:1.7;overflow-x:auto}
+svg.fig,canvas.fig{width:100%;height:auto;display:block;background:var(--bg);border-radius:14px}
+.seg{display:inline-flex;border:1.5px solid var(--line);border-radius:12px;overflow:hidden}
+.seg button{border:none;background:var(--surface);padding:8px 14px;font-size:15px}
+.seg button.on{background:var(--acc);color:#fff}
+.kv{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:15px;color:var(--muted)}
+
+/* nav */
+.nav{display:flex;align-items:center;gap:10px;padding:10px 16px calc(10px + env(safe-area-inset-bottom));background:var(--surface);border-top:1px solid var(--line)}
+.nbtn{border:1.5px solid var(--line);background:var(--surface);border-radius:14px;padding:12px 18px;font-weight:600;font-size:16px;min-width:110px}
+.nbtn.primary{background:var(--acc);border-color:var(--acc);color:#fff;margin-left:auto}
+.nbtn:disabled{opacity:.4}
+.count{flex:1;text-align:center;font-variant-numeric:tabular-nums;color:var(--muted);font-size:15px}
+
+/* drawer */
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(360px,88vw);background:var(--surface);box-shadow:-10px 0 40px #13233a33;transform:translateX(105%);transition:transform .25s ease;z-index:20;display:flex;flex-direction:column}
+.drawer.open{transform:none}
+.drawer-head{display:flex;justify-content:space-between;align-items:center;padding:16px;border-bottom:1px solid var(--line)}
+.x{border:none;background:var(--bg);border-radius:10px;width:36px;height:36px}
+#toc{margin:0;padding:8px 8px 24px 8px;overflow-y:auto;list-style:none;counter-reset:t}
+#toc li button{width:100%;text-align:left;border:none;background:none;padding:10px 12px;border-radius:10px;display:flex;gap:10px;font-size:15px}
+#toc li button .n{color:var(--muted);min-width:24px;font-variant-numeric:tabular-nums}
+#toc li button.cur{background:var(--acc-soft);font-weight:600}
+
+@media (max-width:640px){
+  body{font-size:16px}
+  .grid2,.vs{grid-template-columns:1fr}
+  .grid3{gap:8px}
+  .grid3 .tile{padding:10px}
+  .vs > div:nth-child(odd){border-right:none}
+  .vs > div:nth-child(n+2){border-top:1px solid var(--line)}
+  .tab .tt{display:none}
+  .brand .bname{display:none}
+  .nbtn{min-width:0;padding:12px 14px}
+  .formula{font-size:23px}
+  .ctrl{grid-template-columns:1fr 70px}
+  .ctrl label{grid-column:1 / -1}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important}
+}
+
+</style>
+</head>
+<body data-ch="1">
+<div class="app">
+  <header class="top">
+    <div class="brand"><span class="code">SFT3033</span><span class="bname">Mekanik</span></div>
+    <nav class="tabs" aria-label="Bab">
+      <button class="tab" data-go="1"><span class="tn">Bab 1</span><span class="tt">Unit &amp; Vektor</span></button>
+      <button class="tab" data-go="2"><span class="tn">Bab 2</span><span class="tt">Gerakan</span></button>
+      <button class="tab" data-go="3"><span class="tn">Bab 3</span><span class="tt">Hukum Newton</span></button>
+    </nav>
+    <button class="menu-btn" id="menuBtn" aria-label="Senarai slaid">☰</button>
+  </header>
+  <div class="progress"><div class="bar" id="bar"></div></div>
+  <main class="stage" id="stage">
+<!-- ===================== BAB 1 ===================== -->
+<section class="slide" data-ch="1" data-title="Mula: Bab 1">
+<div class="inner cover">
+  <span class="eyebrow">Bab 1 · SFT3033 Mechanics</span>
+  <div class="num">01</div>
+  <h1>Units, Physical Quantities &amp; Vectors</h1>
+  <p class="lead">Unit, kuantiti fizik dan vektor. Ini asas untuk semua bab lepas ni.</p>
+  <div class="outcomes">
+    <div><b>1</b><span>Faham <span class="hl">piawai dan unit</span> bagi kuantiti fizik.</span></div>
+    <div><b>2</b><span>Faham <span class="hl">ketekalan unit</span> (dimensi) dan angka bererti.</span></div>
+    <div><b>3</b><span>Faham <span class="hl">vektor</span>: tambah, tolak, hasil darab titik dan silang.</span></div>
+  </div>
+  <p class="howto">Cara guna: tekan <b>Seterusnya</b> atau leret ke kiri. Butang <b>Langkah seterusnya</b> buka jalan kira satu-satu. Cuba jawab dulu sebelum buka.</p>
+</div>
+</section>
+
+<section class="slide" data-ch="1" data-title="Kuantiti fizik">
+<div class="inner">
+  <span class="eyebrow">1.2 · Standard &amp; Units</span>
+  <h2>Kuantiti fizik = nombor + unit</h2>
+  <div class="def"><span class="tag">Definisi</span><p><b>Physical quantity</b>: kuantiti yang boleh <b>diukur</b>, dan mesti ada <b>nombor</b> dan <b>unit</b>. Contoh: <span class="m">1 s</span>, <span class="m">9.81 m/s²</span>.</p></div>
+  <div class="grid2">
+    <div class="card"><h3>Fundamental (asas)</h3><p>Tak boleh diterbitkan daripada kuantiti lain.</p><div class="chips" style="margin-top:8px"><span class="chip">length</span><span class="chip">mass</span><span class="chip">time</span></div></div>
+    <div class="card"><h3>Derived (terbitan)</h3><p>Gabungan dua atau lebih kuantiti asas.</p><div class="chips" style="margin-top:8px"><span class="chip">speed = m/s</span><span class="chip">density = kg/m³</span></div></div>
+  </div>
+  <div class="warn"><span class="tag">Awas</span><p>"5" sahaja bukan kuantiti fizik. "5 kg" baru kuantiti fizik.</p></div>
+  <div class="quiz" data-correct="b" data-explain="Laju = jarak ÷ masa. Gabungan dua kuantiti asas (length dan time), jadi ia derived quantity.">
+    <span class="qn">Cuba</span><p class="qt">Laju (speed) ialah kuantiti…</p>
+    <div class="opts"><button class="opt" data-k="a"><span class="k">A</span>Fundamental</button><button class="opt" data-k="b"><span class="k">B</span>Derived</button></div>
+    <p class="fb"></p>
+  </div>
+</div>
+</section>
+
+<section class="slide" data-ch="1" data-title="7 unit asas SI">
+<div class="inner">
+  <span class="eyebrow">1.2 · SI base units</span>
+  <h2>7 kuantiti asas SI</h2>
+  <p class="lead">SI menyeragamkan unit di seluruh dunia. Semua unit lain dibina daripada tujuh ini.</p>
+  <div class="tiles">
+    <div class="tile"><span class="sm">length</span><span class="big">m</span><span class="sm">metre</span></div>
+    <div class="tile"><span class="sm">mass</span><span class="big">kg</span><span class="sm">kilogram</span></div>
+    <div class="tile"><span class="sm">time</span><span class="big">s</span><span class="sm">second</span></div>
+    <div class="tile"><span class="sm">electric current</span><span class="big">A</span><span class="sm">ampere</span></div>
+    <div class="tile"><span class="sm">temperature</span><span class="big">K</span><span class="sm">kelvin</span></div>
+    <div class="tile"><span class="sm">amount of substance</span><span class="big">mol</span><span class="sm">mole</span></div>
+    <div class="tile"><span class="sm">luminous intensity</span><span class="big">cd</span><span class="sm">candela</span></div>
+  </div>
+  <h3>Contoh unit terbitan</h3>
+  <div class="tbl-wrap"><table class="t">
+    <tr><th>Kuantiti</th><th>Unit</th><th>Dalam unit asas</th></tr>
+    <tr><td>Force</td><td>newton (N)</td><td class="m">kg·m/s²</td></tr>
+    <tr><td>Energy, work</td><td>joule (J)</td><td class="m">N·m = kg·m²/s²</td></tr>
+    <tr><td>Power</td><td>watt (W)</td><td class="m">J/s</td></tr>
+    <tr><td>Pressure</td><td>pascal (Pa)</td><td class="m">N/m²</td></tr>
+  </table></div>
+</div>
+</section>
+
+<section class="slide" data-ch="1" data-title="Saat dan meter">
+<div class="inner">
+  <span class="eyebrow">1.2 · Standard</span>
+  <h2>Bagaimana 1 saat dan 1 meter ditetapkan?</h2>
+  <div class="grid2">
+    <div class="card"><h3>1 second (s)</h3><p style="margin-top:6px">Masa untuk <b>9 192 631 770</b> kitaran gelombang mikro yang membuat elektron luar atom <b>cesium-133</b> menukar arah putaran (spin). Inilah jam atom.</p></div>
+    <div class="card"><h3>1 metre (m)</h3><p style="margin-top:6px">Jarak cahaya bergerak dalam vakum dalam <b>1/299 792 458</b> saat. Maksudnya, cahaya bergerak tepat 299 792 458 m dalam 1 s.</p></div>
+  </div>
+  <div class="tip"><span class="tag">Ingat</span><p>Soalan tutorial "Define time / length" mahu ayat ini. Hafal dua nombor besar ini.</p></div>
+</div>
+</section>
+
+<section class="slide" data-ch="1" data-title="Imbuhan (prefix)">
+<div class="inner">
+  <span class="eyebrow">1.2 · Prefixes</span>
+  <h2>Imbuhan: kuasa 10</h2>
+  <div class="tiles">
+    <div class="tile"><span class="big">G</span><span class="sm">giga · 10⁹</span></div>
+    <div class="tile"><span class="big">M</span><span class="sm">mega · 10⁶</span></div>
+    <div class="tile"><span class="big">k</span><span class="sm">kilo · 10³</span></div>
+    <div class="tile"><span class="big">c</span><span class="sm">centi · 10⁻²</span></div>
+    <div class="tile"><span class="big">m</span><span class="sm">milli · 10⁻³</span></div>
+    <div class="tile"><span class="big">µ</span><span class="sm">micro · 10⁻⁶</span></div>
+    <div class="tile"><span class="big">n</span><span class="sm">nano · 10⁻⁹</span></div>
+    <div class="tile"><span class="big">p</span><span class="sm">pico · 10⁻¹²</span></div>
+  </div>
+  <div class="widget" data-w="prefix">
+    <div class="wtitle">Cuba tukar imbuhan</div>
+  </div>
+</div>
+</section>
+
+<section class="slide" data-ch="1" data-title="Analisis dimensi">
+<div class="inner">
+  <span class="eyebrow">1.3 · Unit consistency</span>
+  <h2>Analisis dimensi</h2>
+  <div class="def"><span class="tag">Definisi</span><p>Persamaan mesti <b>konsisten dari segi dimensi</b>: dimensi kiri (LHS) = dimensi kanan (RHS), dan setiap sebutan yang ditambah mesti sama dimensi.</p></div>
+  <div class="grid3">
+    <div class="tile"><span class="big">[L]</span><span class="sm">length</span></div>
+    <div class="tile"><span class="big">[M]</span><span class="sm">mass</span></div>
+    <div class="tile"><span class="big">[T]</span><span class="sm">time</span></div>
+  </div>
+  <div class="tbl-wrap"><table class="t">
+    <tr><th>Kuantiti</th><th>Dimensi</th></tr>
+    <tr><td>Area / Volume</td><td class="m">[L²] / [L³]</td></tr>
+    <tr><td>Velocity</td><td class="m">[L][T⁻¹]</td></tr>
+    <tr><td>Acceleration</td><td class="m">[L][T⁻²]</td></tr>
+    <tr><td>Density</td><td class="m">[M][L⁻³]</td></tr>
+    <tr><td>Force</td><td class="m">[M][L][T⁻²]</td></tr>
+  </table></div>
+  <div class="widget" data-w="dims">
+    <div class="wtitle">Penyemak dimensi: pilih persamaan</div>
+  </div>
+</div>
+</section>
+
+<section class="slide" data-ch="1" data-title="Contoh: unit G">
+<div class="inner">
+  <span class="eyebrow">1.3 · Contoh</span>
+  <h2>Cari unit SI bagi <span class="m"><i>G</i></span></h2>
+  <div class="q-head"><p>Hukum graviti Newton: <span class="m"><i>F</i> = <i>GMm</i> / <i>r</i>²</span>. Unit daya ialah <span class="m">kg·m/s²</span>.</p></div>
+  <div class="steps">
+    <div class="step"><span class="sn">1</span><div>Jadikan <span class="m"><i>G</i></span> subjek: <span class="m"><i>G</i> = <i>Fr</i>² / (<i>Mm</i>)</span></div></div>
+    <div class="step"><span class="sn">2</span><div>Masukkan unit: <span class="m">(kg·m/s²)(m²) / (kg)(kg)</span></div></div>
+    <div class="step"><span class="sn">3</span><div>Potong satu kg: <span class="m">kg·m³ / (kg²·s²) = m³ / (kg·s²)</span></div></div>
+    <div class="step ans"><span class="sn">✓</span><div><b>Jawapan:</b> <span class="m">m³/(kg·s²)</span>, sama dengan <span class="m">N·m²/kg²</span></div></div>
+  </div>
+  <div class="btnrow"><button class="btn next-step">Langkah seterusnya</button><button class="btn ghost reset-step">Ulang</button></div>
+</div>
+</section>
+
+<section class="slide" data-ch="1" data-title="Penukaran unit">
+<div class="inner">
+  <span class="eyebrow">1.4 · Unit conversion</span>
+  <h2>Darab dengan "satu" yang bijak</h2>
+  <p class="lead">Faktor penukaran seperti <span class="m">(1000 m / 1 km)</span> sama dengan 1. Darab, kemudian potong unit yang sama atas dan bawah.</p>
+  <div class="formula">763.0 mi/h × <span style="white-space:nowrap">(1.609 km / 1 mi)</span> × <span style="white-space:nowrap">(1000 m / 1 km)</span> × <span style="white-space:nowrap">(1 h / 3600 s)</span> = 341.0 m/s<small>Contoh nota: rekod laju darat Thrust SSC</small></div>
+  <div class="tip"><span class="tag">Tips</span><p>Letak unit yang anda mahu <b>buang</b> di sebelah bertentangan (atas ↔ bawah) dalam faktor.</p></div>
+  <div class="widget" data-w="speedconv">
+    <div class="wtitle">Penukar laju dengan jalan kira</div>
+  </div>
+</div>
+</section>
+
+<section class="slide" data-ch="1" data-title="Ketakpastian &amp; angka bererti">
+<div class="inner">
+  <span class="eyebrow">1.5 · Uncertainty &amp; significant figures</span>
+  <h2>Ketakpastian dan angka bererti</h2>
+  <div class="grid2">
+    <div class="card"><h3>Uncertainty</h3><p>Nilai terkecil yang alat boleh ukur.</p><ul class="list" style="margin-top:6px"><li>Pembaris: <span class="m">(3 ± 1) mm</span></li><li>Micrometer: <span class="m">(2.91 ± 0.01) mm</span> → lebih jitu</li></ul></div>
+    <div class="card"><h3>Peraturan s.f.</h3><ul class="list"><li>Digit bukan sifar: <b>bererti</b></li><li>Sifar di antara digit: <b>bererti</b> (1<u>0</u>5 → 3 s.f.)</li><li>Sifar di depan: <b>tak bererti</b> (0.00<u>4</u>2 → 2 s.f.)</li><li>Sifar di belakang selepas titik: <b>bererti</b> (2.50 → 3 s.f.)</li></ul></div>
+  </div>
+  <div class="widget" data-w="sigfig">
+    <div class="wtitle">Pengira angka bererti</div>
+  </div>
+</div>
+</section>
+
+<section class="slide" data-ch="1" data-title="Skalar vs vektor">
+<div class="inner">
+  <span class="eyebrow">1.6 · Vector</span>
+  <h2>Skalar atau vektor?</h2>
+  <div class="vs">
+    <div class="vh">Scalar</div><div class="vh">Vector</div>
+    <div>Ada <b>magnitud</b> sahaja</div><div>Ada <b>magnitud + arah</b></div>
+    <div>length, speed, mass, volume, energy, work, power</div><div>displacement, velocity, acceleration, force, momentum, weight</div>
+  </div>
+  <div class="tip"><span class="tag">Cara kenal</span><p>Vektor dilukis sebagai anak panah: <b>panjang</b> = magnitud, <b>kepala</b> = arah. Ditulis <span class="m"><i>A</i>⃗</span>.</p></div>
+  <div class="widget" data-w="sorter">
+    <div class="wtitle">Tekan setiap kuantiti: skalar atau vektor?</div>
+  </div>
+</div>
+</section>
+
+<section class="slide" data-ch="1" data-title="Tambah vektor">
+<div class="inner">
+  <span class="eyebrow">1.6 · Vector addition</span>
+  <h2>Tambah vektor: kepala ke ekor</h2>
+  <div class="grid2">
+    <div class="card"><ol class="list"><li>Lukis <span class="m"><i>A</i>⃗</span>.</li><li>Letak <b>ekor</b> <span class="m"><i>B</i>⃗</span> di <b>kepala</b> <span class="m"><i>A</i>⃗</span>.</li><li>Paduan <span class="m"><i>R</i>⃗</span>: dari ekor <span class="m"><i>A</i>⃗</span> ke kepala <span class="m"><i>B</i>⃗</span>.</li><li>Kira guna komponen.</li></ol></div>
+    <div class="card"><p><b>Contoh nota (pemain ski):</b> 1.00 km utara, kemudian 2.00 km timur.</p><p class="m" style="margin-top:6px">R = √(1.00² + 2.00²) = 2.24 km</p><p class="m">tan φ = 2.00/1.00 → φ = 63.4°</p><p style="font-size:15px;color:var(--muted)">63.4° timur dari utara (= 26.6° utara dari timur)</p></div>
+  </div>
+  <div class="widget" data-w="vadd">
+    <div class="wtitle">Main dengan dua vektor</div>
+  </div>
+</div>
+</section>
+
+<section class="slide" data-ch="1" data-title="Komponen vektor">
+<div class="inner">
+  <span class="eyebrow">1.6 · Vector components</span>
+  <h2>Pecahkan vektor kepada komponen</h2>
+  <div class="grid2">
+    <div class="formula"><i>A<sub>x</sub></i> = <i>A</i> cos θ<br><i>A<sub>y</sub></i> = <i>A</i> sin θ<small>θ diukur dari paksi +x, lawan jam</small></div>
+    <div class="formula"><i>A</i> = √(<i>A<sub>x</sub></i>² + <i>A<sub>y</sub></i>²)<br>tan θ = <i>A<sub>y</sub></i> / <i>A<sub>x</sub></i><small>semak sukuan selepas guna tan⁻¹</small></div>
+  </div>
+  <div class="widget" data-w="comp">
+    <div class="wtitle">Pusing vektor, lihat tanda komponen</div>
+  </div>
+  <div class="warn"><span class="tag">Kesilapan biasa</span><p>Kalkulator <span class="m">tan⁻¹</span> hanya beri sudut dalam sukuan I atau IV. Kalau <span class="m"><i>A<sub>x</sub></i> &lt; 0</span>, tambah 180°.</p></div>
+</div>
+</section>
+
+<section class="slide" data-ch="1" data-title="Vektor unit">
+<div class="inner">
+  <span class="eyebrow">1.6 · Unit vector</span>
+  <h2>Vektor unit <span class="m">î, ĵ, k̂</span></h2>
+  <div class="def"><span class="tag">Definisi</span><p>Vektor bermagnitud <b>1</b>, tiada unit, hanya tunjuk arah: <span class="m">î</span> (+x), <span class="m">ĵ</span> (+y), <span class="m">k̂</span> (+z).</p></div>
+  <div class="formula"><i>A</i>⃗ = <i>A<sub>x</sub></i>î + <i>A<sub>y</sub></i>ĵ + <i>A<sub>z</sub></i>k̂</div>
+  <h3>Contoh nota: magnitud <span class="m">2<i>D</i>⃗ − <i>E</i>⃗</span></h3>
+  <div class="given"><span>D⃗ = 6.00î + 3.00ĵ − 1.00k̂ m</span><span>E⃗ = 4.00î − 5.00ĵ + 8.00k̂ m</span></div>
+  <div class="steps">
+    <div class="step"><span class="sn">1</span><div>Gandakan <span class="m">D⃗</span>: <span class="m">2D⃗ = 12.00î + 6.00ĵ − 2.00k̂</span></div></div>
+    <div class="step"><span class="sn">2</span><div>Tolak komponen sepadan: <span class="m">(12.00−4.00)î + (6.00+5.00)ĵ + (−2.00−8.00)k̂</span></div></div>
+    <div class="step"><span class="sn">3</span><div><span class="m">F⃗ = 8.00î + 11.00ĵ − 10.00k̂ m</span></div></div>
+    <div class="step ans"><span class="sn">✓</span><div><span class="m">F = √(8.00² + 11.00² + (−10.00)²) = <b>16.9 m</b></span></div></div>
+  </div>
+  <div class="btnrow"><button class="btn next-step">Langkah seterusnya</button><button class="btn ghost reset-step">Ulang</button></div>
+</div>
+</section>
+
+<section class="slide" data-ch="1" data-title="Hasil darab titik">
+<div class="inner">
+  <span class="eyebrow">1.6 · Dot product</span>
+  <h2>Hasil darab titik (scalar product)</h2>
+  <div class="grid2">
+    <div class="formula"><i>A</i>⃗·<i>B</i>⃗ = <i>AB</i> cos φ<small>φ = sudut antara A dan B (ekor ke ekor)</small></div>
+    <div class="formula"><i>A</i>⃗·<i>B</i>⃗ = <i>A<sub>x</sub>B<sub>x</sub></i> + <i>A<sub>y</sub>B<sub>y</sub></i> + <i>A<sub>z</sub>B<sub>z</sub></i><small>jumlah hasil darab komponen</small></div>
+  </div>
+  <div class="grid2">
+    <div class="tip"><span class="tag">Ingat</span><p><span class="m">î·î = ĵ·ĵ = k̂·k̂ = 1</span><br><span class="m">î·ĵ = ĵ·k̂ = k̂·î = 0</span></p></div>
+    <div class="tip"><span class="tag">Ingat</span><p>Hasilnya <b>skalar</b> (nombor). Jika <span class="m">A ⊥ B</span>, <span class="m">A⃗·B⃗ = 0</span>.</p></div>
+  </div>
+  <div class="widget" data-w="dot">
+    <div class="wtitle">Kalkulator: sudut antara dua vektor</div>
+  </div>
+</div>
+</section>
+
+<section class="slide" data-ch="1" data-title="Hasil darab silang">
+<div class="inner">
+  <span class="eyebrow">1.6 · Cross product</span>
+  <h2>Hasil darab silang (vector product)</h2>
+  <div class="grid2">
+    <div class="formula"><i>C</i> = <i>AB</i> sin φ<small>magnitud; arah guna peraturan tangan kanan</small></div>
+    <div class="card"><h3>Roda kitaran</h3>
+      <svg class="fig" viewBox="0 0 240 170" aria-label="Kitaran i ke j ke k">
+        <circle cx="120" cy="88" r="58" fill="none" stroke="#9AA9BC" stroke-width="2" stroke-dasharray="4 4"/>
+        <path d="M150 38 A58 58 0 0 1 176 104" fill="none" stroke="#17804F" stroke-width="4" marker-end="url(#ah)"/>
+        <path d="M160 132 A58 58 0 0 1 80 132" fill="none" stroke="#17804F" stroke-width="4" marker-end="url(#ah)"/>
+        <path d="M64 104 A58 58 0 0 1 90 38" fill="none" stroke="#17804F" stroke-width="4" marker-end="url(#ah)"/>
+        <defs><marker id="ah" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0L10 5L0 10z" fill="#17804F"/></marker></defs>
+        <text x="120" y="26" text-anchor="middle" font-size="22" font-family="serif" font-style="italic" fill="#13233A">î</text>
+        <text x="190" y="140" text-anchor="middle" font-size="22" font-family="serif" font-style="italic" fill="#13233A">ĵ</text>
+        <text x="50" y="140" text-anchor="middle" font-size="22" font-family="serif" font-style="italic" fill="#13233A">k̂</text>
+      </svg>
+      <p style="font-size:15px">Ikut arah anak panah → <b>positif</b>: <span class="m">î×ĵ = k̂, ĵ×k̂ = î, k̂×î = ĵ</span>. Lawan arah → <b>negatif</b>: <span class="m">ĵ×î = −k̂</span>. Sama: <span class="m">î×î = 0</span>.</p>
+    </div>
+  </div>
+  <div class="formula" style="font-size:21px">C<sub>x</sub> = A<sub>y</sub>B<sub>z</sub> − A<sub>z</sub>B<sub>y</sub> &nbsp; C<sub>y</sub> = A<sub>z</sub>B<sub>x</sub> − A<sub>x</sub>B<sub>z</sub> &nbsp; C<sub>z</sub> = A<sub>x</sub>B<sub>y</sub> − A<sub>y</sub>B<sub>x</sub></div>
+  <div class="widget" data-w="cross">
+    <div class="wtitle">Kalkulator hasil darab silang</div>
+  </div>
+</div>
+</section>
+
+<section class="slide" data-ch="1" data-title="Kuiz Bab 1">
+<div class="inner">
+  <span class="eyebrow">Kuiz Bab 1</span>
+  <h2>Uji diri: 6 soalan</h2>
+  <div class="quizset">
+  <div class="quiz" data-correct="c" data-explain="[M]/[L³] = [M][L⁻³]. Density = mass ÷ volume.">
+    <span class="qn">Soalan 1</span><p class="qt">Dimensi bagi density ialah…</p>
+    <div class="opts"><button class="opt" data-k="a"><span class="k">A</span>[M][L³]</button><button class="opt" data-k="b"><span class="k">B</span>[M][L⁻²]</button><button class="opt" data-k="c"><span class="k">C</span>[M][L⁻³]</button><button class="opt" data-k="d"><span class="k">D</span>[L][T⁻²]</button></div><p class="fb"></p>
+  </div>
+  <div class="quiz" data-correct="b" data-explain="ax ada dimensi [L/T²][L] = [L²/T²], tak sama dengan [L/T]. Sebutan yang tak sama dimensi tak boleh ditambah.">
+    <span class="qn">Soalan 2</span><p class="qt"><span class="m">v<sub>f</sub> = v<sub>i</sub> + ax</span> betul dari segi dimensi?</p>
+    <div class="opts"><button class="opt" data-k="a"><span class="k">A</span>Ya</button><button class="opt" data-k="b"><span class="k">B</span>Tidak</button></div><p class="fb"></p>
+  </div>
+  <div class="quiz" data-correct="a" data-explain="Digit keempat ialah 7 (≥ 5), jadi 8.18 dibundarkan naik menjadi 8.19.">
+    <span class="qn">Soalan 3</span><p class="qt">8.187659678 × 10⁻¹⁴ dalam 3 s.f. ialah…</p>
+    <div class="opts"><button class="opt" data-k="a"><span class="k">A</span>8.19 × 10⁻¹⁴</button><button class="opt" data-k="b"><span class="k">B</span>8.18 × 10⁻¹⁴</button><button class="opt" data-k="c"><span class="k">C</span>8.188 × 10⁻¹⁴</button></div><p class="fb"></p>
+  </div>
+  <div class="quiz" data-correct="d" data-explain="Aₓ negatif dan A_y positif → sukuan II. Sudut rujukan = tan⁻¹(1/2) = 26.6°, jadi θ = 180° − 26.6° = 153.4°.">
+    <span class="qn">Soalan 4</span><p class="qt">Aₓ = −2.00 m, A<sub>y</sub> = 1.00 m. Sudut θ dari +x ialah…</p>
+    <div class="opts"><button class="opt" data-k="a"><span class="k">A</span>26.6°</button><button class="opt" data-k="b"><span class="k">B</span>−26.6°</button><button class="opt" data-k="c"><span class="k">C</span>206.6°</button><button class="opt" data-k="d"><span class="k">D</span>153.4°</button></div><p class="fb"></p>
+  </div>
+  <div class="quiz" data-correct="b" data-explain="Dua vektor yang berserenjang: cos 90° = 0, jadi A⃗·B⃗ = 0.">
+    <span class="qn">Soalan 5</span><p class="qt">Jika <span class="m">A⃗ ⊥ B⃗</span>, maka <span class="m">A⃗·B⃗</span> = …</p>
+    <div class="opts"><button class="opt" data-k="a"><span class="k">A</span>AB</button><button class="opt" data-k="b"><span class="k">B</span>0</button><button class="opt" data-k="c"><span class="k">C</span>1</button></div><p class="fb"></p>
+  </div>
+  <div class="quiz" data-correct="c" data-explain="Lawan arah kitaran î→ĵ→k̂, jadi negatif: k̂ × ĵ = −î.">
+    <span class="qn">Soalan 6</span><p class="qt"><span class="m">k̂ × ĵ</span> = …</p>
+    <div class="opts"><button class="opt" data-k="a"><span class="k">A</span>î</button><button class="opt" data-k="b"><span class="k">B</span>0</button><button class="opt" data-k="c"><span class="k">C</span>−î</button><button class="opt" data-k="d"><span class="k">D</span>k̂</button></div><p class="fb"></p>
+  </div>
+  <p class="score"></p>
+  </div>
+</div>
+</section>
+
+<section class="slide" data-ch="1" data-title="Ringkasan Bab 1">
+<div class="inner">
+  <span class="eyebrow">Ringkasan Bab 1</span>
+  <h2>Helaian formula Bab 1</h2>
+  <div class="tbl-wrap"><table class="t">
+    <tr><th>Topik</th><th>Perkara penting</th></tr>
+    <tr><td>Kuantiti fizik</td><td>Nombor + unit. 7 unit asas SI: m, kg, s, A, K, mol, cd</td></tr>
+    <tr><td>Dimensi</td><td class="m">[L], [M], [T]; LHS = RHS</td></tr>
+    <tr><td>Tukar unit</td><td>Darab faktor = 1, potong unit</td></tr>
+    <tr><td>Komponen</td><td class="m">Aₓ = A cos θ, A_y = A sin θ</td></tr>
+    <tr><td>Magnitud &amp; arah</td><td class="m">A = √(Aₓ² + A_y²), θ = tan⁻¹(A_y/Aₓ)</td></tr>
+    <tr><td>Dot product</td><td class="m">A⃗·B⃗ = AB cos φ = AₓBₓ + A_yB_y + A_zB_z</td></tr>
+    <tr><td>Cross product</td><td class="m">|A⃗×B⃗| = AB sin φ; î×ĵ = k̂</td></tr>
+  </table></div>
+  <div class="tip"><span class="tag">Seterusnya</span><p>Tekan <b>Bab 2</b> di atas untuk Gerakan.</p></div>
+</div>
+</section>
+<!-- ===================== BAB 2 ===================== -->
+<section class="slide" data-ch="2" data-title="Mula: Bab 2">
+<div class="inner cover">
+  <span class="eyebrow">Bab 2 · SFT3033 Mechanics</span>
+  <div class="num">02</div>
+  <h1>Motion: Straight Line &amp; Two Dimensions</h1>
+  <p class="lead">Part 1: gerakan garis lurus. Part 2: projektil, gerakan bulat dan halaju relatif.</p>
+  <div class="outcomes">
+    <div><b>1</b><span>Sesaran, halaju purata dan halaju seketika (<span class="hl">beza laju dan halaju</span>).</span></div>
+    <div><b>2</b><span>Pecutan, dan <span class="hl">4 persamaan pecutan malar</span>.</span></div>
+    <div><b>3</b><span>Jatuh bebas dan <span class="hl">gerakan projektil</span>.</span></div>
+    <div><b>4</b><span>Gerakan bulat dan <span class="hl">halaju relatif</span>.</span></div>
+  </div>
+</div>
+</section>
+
+<section class="slide" data-ch="2" data-title="Sesaran vs jarak">
+<div class="inner">
+  <span class="eyebrow">2.1 · Displacement</span>
+  <h2>Sesaran = perubahan kedudukan</h2>
+  <div class="formula">Δ<i>x</i> = <i>x</i><sub>f</sub> − <i>x</i><sub>i</sub><small>kedudukan akhir − kedudukan awal</small></div>
+  <p>Contoh nota: anjing lari <b>2.54 m timur</b>, kemudian <b>5.67 m barat</b>, kemudian <b>1.33 m timur</b>. Timur = +.</p>
+  <div class="widget" data-w="dog">
+    <div class="wtitle">Tekan untuk gerakkan anjing</div>
+  </div>
+  <div class="tip"><span class="tag">Ingat</span><p><b>Jarak</b> (distance) = jumlah semua langkah, sentiasa positif. <b>Sesaran</b> (displacement) = dari mula ke akhir sahaja, ada tanda.</p></div>
+</div>
+</section>
+
+<section class="slide" data-ch="2" data-title="Halaju purata">
+<div class="inner">
+  <span class="eyebrow">2.1 · Average velocity</span>
+  <h2>Halaju purata</h2>
+  <div class="grid2">
+    <div class="formula"><i>v</i><sub>av</sub> = Δ<i>x</i> / Δ<i>t</i><small>halaju purata (guna sesaran)</small></div>
+    <div class="formula">laju purata = jarak / Δ<i>t</i><small>average speed (guna jarak)</small></div>
+  </div>
+  <h3>Contoh tutorial: rumah → kincir angin → bangku</h3>
+  <div class="given"><span>+60.0 m dalam 28.0 s</span><span>−40.0 m dalam 36.0 s</span></div>
+  <div class="steps">
+    <div class="step"><span class="sn">1</span><div>Jumlah masa: <span class="m">28.0 + 36.0 = 64.0 s</span></div></div>
+    <div class="step"><span class="sn">2</span><div>Sesaran: <span class="m">Δx = 60.0 − 40.0 = 20.0 m</span> → <span class="m">v<sub>av</sub> = 20.0/64.0 = <b>0.312 m/s</b></span></div></div>
+    <div class="step"><span class="sn">3</span><div>Jarak: <span class="m">60.0 + 40.0 = 100 m</span> → laju purata <span class="m">= 100/64.0 = <b>1.56 m/s</b></span></div></div>
+    <div class="step ans"><span class="sn">✓</span><div>Halaju purata lebih kecil sebab anda berpatah balik.</div></div>
+  </div>
+  <div class="btnrow"><button class="btn next-step">Langkah seterusnya</button><button class="btn ghost reset-step">Ulang</button></div>
+</div>
+</section>
+
+<section class="slide" data-ch="2" data-title="Halaju seketika">
+<div class="inner">
+  <span class="eyebrow">2.2 · Instantaneous velocity</span>
+  <h2>Halaju seketika = kecerunan tangen</h2>
+  <div class="formula"><i>v<sub>x</sub></i> = lim<sub>Δt→0</sub> Δ<i>x</i>/Δ<i>t</i> = <i>dx</i>/<i>dt</i><small>halaju pada satu masa tertentu</small></div>
+  <p>Soalan nota: <span class="m">s(t) = 2t³ + 4t − 1</span>. Cari halaju pada <span class="m">t = 4 s</span>. Gerakkan slider dan lihat tangen.</p>
+  <div class="widget" data-w="tangent">
+    <div class="wtitle">Tangen pada graf x–t</div>
+  </div>
+  <div class="tip"><span class="tag">Jawapan</span><p><span class="m">v = ds/dt = 6t² + 4</span> → <span class="m">v(4) = 6(16) + 4 = <b>100 m/s</b></span></p></div>
+</div>
+</section>
+
+<section class="slide" data-ch="2" data-title="Laju vs halaju">
+<div class="inner">
+  <span class="eyebrow">2.2 · Soalan nota</span>
+  <h2>Apa beza laju dan halaju?</h2>
+  <div class="vs">
+    <div class="vh">Speed (laju)</div><div class="vh">Velocity (halaju)</div>
+    <div>Kuantiti <b>skalar</b></div><div>Kuantiti <b>vektor</b></div>
+    <div>Berkait dengan <b>jarak</b></div><div>Berkait dengan <b>sesaran</b></div>
+    <div>Tak pernah negatif</div><div>Boleh sifar atau negatif (tanda = arah)</div>
+  </div>
+  <div class="quiz" data-correct="a" data-explain="Burung balik ke sarang: sesaran keseluruhan = 0, jadi halaju purata = 0. Tapi lajunya bukan sifar, sebab burung itu terbang 10 300 km.">
+    <span class="qn">Cuba</span><p class="qt">Burung terbang 5150 km dari sarang dan pulang semula. Halaju purata untuk seluruh perjalanan?</p>
+    <div class="opts"><button class="opt" data-k="a"><span class="k">A</span>0 m/s</button><button class="opt" data-k="b"><span class="k">B</span>−4.42 m/s</button><button class="opt" data-k="c"><span class="k">C</span>4.42 m/s</button></div><p class="fb"></p>
+  </div>
+</div>
+</section>
+
+<section class="slide" data-ch="2" data-title="Pecutan">
+<div class="inner">
+  <span class="eyebrow">2.3 · Acceleration</span>
+  <h2>Pecutan = kadar perubahan halaju</h2>
+  <div class="grid2">
+    <div class="formula"><i>a</i><sub>av</sub> = (<i>v</i><sub>2</sub> − <i>v</i><sub>1</sub>)/(<i>t</i><sub>2</sub> − <i>t</i><sub>1</sub>)<small>pecutan purata</small></div>
+    <div class="formula"><i>a<sub>x</sub></i> = <i>dv<sub>x</sub></i>/<i>dt</i><small>pecutan seketika = kecerunan graf v–t</small></div>
+  </div>
+  <div class="widget" data-w="signs">
+    <div class="wtitle">Laju bertambah atau berkurang? Pilih tanda</div>
+  </div>
+  <div class="tip"><span class="tag">Rumus mudah</span><p>Tanda <b>sama</b> → makin laju. Tanda <b>berbeza</b> → makin perlahan.</p></div>
+</div>
+</section>
+
+<section class="slide" data-ch="2" data-title="Baca graf v–t">
+<div class="inner">
+  <span class="eyebrow">2.3 · Graf v–t</span>
+  <h2>Kereta solar: baca graf v–t</h2>
+  <p>Kecerunan graf v–t = <b>pecutan</b>. Tekan setiap bahagian graf. (60 km/h = 16.7 m/s)</p>
+  <div class="widget" data-w="solar">
+    <div class="wtitle">Tekan bahagian graf</div>
+  </div>
+  <div class="tip"><span class="tag">Tutorial</span><p>Purata 0→40 s = <span class="m">(0 − 0)/40 = 0</span>, sebab kereta mula dan tamat dalam keadaan pegun.</p></div>
+</div>
+</section>
+
+<section class="slide" data-ch="2" data-title="4 persamaan pecutan malar">
+<div class="inner">
+  <span class="eyebrow">2.4 · Constant acceleration</span>
+  <h2>4 persamaan ajaib (pecutan malar)</h2>
+  <div class="tbl-wrap"><table class="t">
+    <tr><th>Persamaan</th><th>Tiada…</th></tr>
+    <tr><td class="m">v = v₀ + at</td><td><b>Δx</b></td></tr>
+    <tr><td class="m">x − x₀ = v₀t + ½at²</td><td><b>v</b></td></tr>
+    <tr><td class="m">v² = v₀² + 2a(x − x₀)</td><td><b>t</b></td></tr>
+    <tr><td class="m">x − x₀ = ½(v₀ + v)t</td><td><b>a</b></td></tr>
+  </table></div>
+  <div class="tip"><span class="tag">Rahsia</span><p>Setiap persamaan <b>tertinggal satu</b> pemboleh ubah. Cari yang soalan tak beri dan tak tanya, kemudian pilih persamaan yang tak ada pemboleh ubah itu.</p></div>
+  <div class="widget" data-w="picker">
+    <div class="wtitle">Pemilih formula: tanda apa yang diberi</div>
+  </div>
+</div>
+</section>
+
+<section class="slide" data-ch="2" data-title="Contoh: kereta berhenti">
+<div class="inner">
+  <span class="eyebrow">2.4 · Contoh nota</span>
+  <h2>Kereta 20 m/s berhenti dalam 35 m</h2>
+  <div class="given"><span>Δx = 35 m</span><span>v₀ = 20 m/s</span><span>v = 0</span><span>a = ?</span><span>t = tiada</span></div>
+  <div class="steps">
+    <div class="step"><span class="sn">1</span><div><b>t</b> tiada → guna <span class="m">v² = v₀² + 2aΔx</span></div></div>
+    <div class="step"><span class="sn">2</span><div><span class="m">0 = (20)² + 2a(35)</span> → <span class="m">0 = 400 + 70a</span></div></div>
+    <div class="step"><span class="sn">3</span><div><span class="m">a = −400/70</span></div></div>
+    <div class="step ans"><span class="sn">✓</span><div><span class="m"><b>a = −5.71 m/s²</b></span>. Tanda negatif bermaksud kereta semakin perlahan.</div></div>
+  </div>
+  <div class="btnrow"><button class="btn next-step">Langkah seterusnya</button><button class="btn ghost reset-step">Ulang</button></div>
+  <div class="quiz" data-correct="b" data-explain="Diberi Δx = 70.0 m, t = 6.00 s, v = 15.0 m/s; a tak diberi dan tak ditanya. Guna x − x₀ = ½(v₀ + v)t: 70.0 = ½(v₀ + 15.0)(6.00), jadi v₀ = 8.33 m/s.">
+    <span class="qn">Cuba (Tutorial S6)</span><p class="qt">Antelope: 70.0 m dalam 6.00 s, v akhir 15.0 m/s. Laju awal?</p>
+    <div class="opts"><button class="opt" data-k="a"><span class="k">A</span>11.7 m/s</button><button class="opt" data-k="b"><span class="k">B</span>8.33 m/s</button><button class="opt" data-k="c"><span class="k">C</span>1.11 m/s</button></div><p class="fb"></p>
+  </div>
+</div>
+</section>
+
+<section class="slide" data-ch="2" data-title="Jatuh bebas">
+<div class="inner">
+  <span class="eyebrow">2.5 · Free fall</span>
+  <h2>Jatuh bebas: hanya graviti</h2>
+  <div class="def"><span class="tag">Definisi</span><p>Gerakan objek di bawah pengaruh <b>pecutan graviti sahaja</b>: <span class="m">g = 9.81 m/s²</span> ke bawah. Ambil atas = +, jadi <span class="m">a<sub>y</sub> = −g</span>.</p></div>
+  <div class="widget" data-w="freefall">
+    <div class="wtitle">Baling bola ke atas</div>
+  </div>
+  <div class="tip"><span class="tag">Ingat</span><p>Di titik tertinggi, <span class="m">v = 0</span> tetapi <span class="m">a = −g</span> masih ada. Masa naik = masa turun.</p></div>
+</div>
+</section>
+
+<section class="slide" data-ch="2" data-title="Gajah vs bulu pelepah">
+<div class="inner">
+  <span class="eyebrow">2.5 · Soalan nota</span>
+  <h2>Gajah atau bulu pelepah, mana sampai dulu?</h2>
+  <div class="grid2">
+    <div class="card"><h3>Tanpa udara (vakum)</h3><p style="margin-top:6px"><b>Sampai serentak.</b> Kedua-duanya jatuh dengan pecutan yang sama, <span class="m">g</span>. Pecutan jatuh bebas tak bergantung pada jisim.</p></div>
+    <div class="card"><h3>Dengan udara (sebenar)</h3><p style="margin-top:6px"><b>Gajah sampai dulu.</b> Bulu pelepah cepat capai <b>halaju terminal</b>: rintangan udara = beratnya, jadi ia jatuh pada laju malar yang rendah. Gajah terus memecut.</p></div>
+  </div>
+  <div class="def"><span class="tag">Terminal velocity</span><p>Laju apabila daya graviti = rintangan udara. Bergantung pada jisim, bentuk dan ketumpatan udara. Luas permukaan besar → halaju terminal rendah.</p></div>
+</div>
+</section>
+
+<section class="slide" data-ch="2" data-title="Projektil: idea utama">
+<div class="inner">
+  <span class="eyebrow">2.6 · Projectile motion</span>
+  <h2>Projektil = dua gerakan berasingan</h2>
+  <div class="vs">
+    <div class="vh">Mendatar (x)</div><div class="vh">Menegak (y)</div>
+    <div><span class="m">a<sub>x</sub> = 0</span>, halaju malar</div><div><span class="m">a<sub>y</sub> = −g</span>, macam jatuh bebas</div>
+    <div class="m">v₀ₓ = v₀ cos α₀</div><div class="m">v₀ᵧ = v₀ sin α₀</div>
+    <div class="m">x = v₀ₓ t</div><div class="m">y = v₀ᵧ t − ½gt²</div>
+  </div>
+  <h3>Terbitkan formula (tak perlu hafal)</h3>
+  <div class="steps">
+    <div class="step"><span class="sn">1</span><div>Puncak: <span class="m">v<sub>y</sub> = 0</span> → <span class="m">0 = v₀ sin θ − gt</span> → <span class="m">t<sub>top</sub> = v₀ sin θ / g</span></div></div>
+    <div class="step"><span class="sn">2</span><div>Masa penerbangan (naik + turun): <span class="m">T = 2v₀ sin θ / g</span></div></div>
+    <div class="step"><span class="sn">3</span><div>Tinggi maksimum: <span class="m">0 = (v₀ sin θ)² − 2gH</span> → <span class="m">H = v₀² sin²θ / 2g</span></div></div>
+    <div class="step ans"><span class="sn">✓</span><div>Julat: <span class="m">R = v₀ₓT = (v₀ cos θ)(2v₀ sin θ/g) = v₀² sin 2θ / g</span></div></div>
+  </div>
+  <div class="btnrow"><button class="btn next-step">Langkah seterusnya</button><button class="btn ghost reset-step">Ulang</button></div>
+</div>
+</section>
+
+<section class="slide" data-ch="2" data-title="Simulator projektil">
+<div class="inner">
+  <span class="eyebrow">2.6 · Simulator</span>
+  <h2>Lancarkan projektil anda</h2>
+  <div class="widget" data-w="proj">
+    <div class="wtitle">Ubah laju dan sudut, kemudian tekan Lancar</div>
+  </div>
+  <div class="tip"><span class="tag">Cuba ini</span><p>Banding 30° dan 60° pada laju yang sama: julat <b>sama</b>. Julat paling jauh pada <b>45°</b>.</p></div>
+</div>
+</section>
+
+<section class="slide" data-ch="2" data-title="Contoh: lontaran mendatar">
+<div class="inner">
+  <span class="eyebrow">2.6 · Contoh nota</span>
+  <h2>Batu dilontar mendatar dari tebing 100 m, mendarat 95 m jauh</h2>
+  <div class="given"><span>v₀ᵧ = 0</span><span>y = 100 m (ke bawah +)</span><span>x = 95 m</span><span>v₀ = ?</span></div>
+  <div class="steps">
+    <div class="step"><span class="sn">1</span><div><b>Menegak dulu</b> (cari masa): <span class="m">y = ½gt²</span></div></div>
+    <div class="step"><span class="sn">2</span><div><span class="m">t = √(2y/g) = √(2(100)/9.8) = 4.52 s</span></div></div>
+    <div class="step"><span class="sn">3</span><div><b>Mendatar</b>: <span class="m">x = v₀t</span> → <span class="m">v₀ = 95/4.52</span></div></div>
+    <div class="step ans"><span class="sn">✓</span><div><span class="m"><b>v₀ ≈ 21 m/s</b></span></div></div>
+  </div>
+  <div class="btnrow"><button class="btn next-step">Langkah seterusnya</button><button class="btn ghost reset-step">Ulang</button></div>
+  <div class="warn"><span class="tag">Strategi</span><p><b>Masa</b> ialah jambatan antara x dan y. Biasanya cari t daripada gerakan menegak dulu.</p></div>
+</div>
+</section>
+
+<section class="slide" data-ch="2" data-title="Gerakan bulat">
+<div class="inner">
+  <span class="eyebrow">2.7 · Circular motion</span>
+  <h2>Gerakan bulat seragam</h2>
+  <div class="def"><span class="tag">Definisi</span><p>Zarah bergerak dalam bulatan dengan <b>laju malar</b>. Arah halaju sentiasa berubah, jadi ada pecutan ke <b>pusat</b>.</p></div>
+  <div class="grid2">
+    <div class="formula"><i>v</i> = 2π<i>r</i> / <i>T</i><small>T = masa satu pusingan</small></div>
+    <div class="formula"><i>a</i><sub>rad</sub> = <i>v</i>² / <i>R</i><small>sentiasa ke pusat (centripetal)</small></div>
+  </div>
+  <div class="widget" data-w="circle">
+    <div class="wtitle">Merry-go-round (contoh nota)</div>
+  </div>
+</div>
+</section>
+
+<section class="slide" data-ch="2" data-title="Halaju relatif">
+<div class="inner">
+  <span class="eyebrow">2.8 · Relative velocity</span>
+  <h2>Halaju relatif: rantai subskrip</h2>
+  <div class="formula"><i>v</i>⃗<sub>P/A</sub> = <i>v</i>⃗<sub>P/B</sub> + <i>v</i>⃗<sub>B/A</sub><small>huruf dalam "dalam" (B) bertemu dan hilang</small></div>
+  <div class="tip"><span class="tag">Tips</span><p>Baca <span class="m">v<sub>P/A</sub></span> sebagai "halaju P <b>dilihat dari</b> A". Kalau subskrip dalam sama-sama hilang, persamaan anda betul.</p></div>
+  <div class="widget" data-w="relvel">
+    <div class="wtitle">Kapal terbang + angin (contoh nota)</div>
+  </div>
+</div>
+</section>
+
+<section class="slide" data-ch="2" data-title="Kuiz Bab 2">
+<div class="inner">
+  <span class="eyebrow">Kuiz Bab 2</span>
+  <h2>Uji diri: 6 soalan</h2>
+  <div class="quizset">
+  <div class="quiz" data-correct="b" data-explain="Δx = v_av × Δt = 6.25 × 4.00 = 25.0 m.">
+    <span class="qn">Soalan 1</span><p class="qt">Halaju purata 6.25 m/s selama 4.00 s. Jarak bergerak?</p>
+    <div class="opts"><button class="opt" data-k="a"><span class="k">A</span>1.56 m</button><button class="opt" data-k="b"><span class="k">B</span>25.0 m</button><button class="opt" data-k="c"><span class="k">C</span>10.25 m</button></div><p class="fb"></p>
+  </div>
+  <div class="quiz" data-correct="c" data-explain="v² = 0 + 2aΔx → a = 45.0²/(2 × 1.50) = 675 m/s². Masa tak diberi dan tak ditanya, jadi guna v² = v₀² + 2aΔx.">
+    <span class="qn">Soalan 2</span><p class="qt">Bola dari 0 ke 45.0 m/s dalam jarak 1.50 m. Pecutan?</p>
+    <div class="opts"><button class="opt" data-k="a"><span class="k">A</span>30.0 m/s²</button><button class="opt" data-k="b"><span class="k">B</span>1350 m/s²</button><button class="opt" data-k="c"><span class="k">C</span>675 m/s²</button></div><p class="fb"></p>
+  </div>
+  <div class="quiz" data-correct="a" data-explain="Kembali ke paras asal: 0 = v₀t − ½gt², jadi t = 2v₀/g = 2(8.20)/9.80 = 1.67 s.">
+    <span class="qn">Soalan 3</span><p class="qt">Pin dilambung ke atas pada 8.20 m/s. Berapa lama sebelum kembali ke tangan?</p>
+    <div class="opts"><button class="opt" data-k="a"><span class="k">A</span>1.67 s</button><button class="opt" data-k="b"><span class="k">B</span>0.837 s</button><button class="opt" data-k="c"><span class="k">C</span>3.43 s</button></div><p class="fb"></p>
+  </div>
+  <div class="quiz" data-correct="b" data-explain="Di puncak, v_y = 0 tetapi v_x kekal = v₀ cos 60° = 20.0 m/s. Pecutan masih g ke bawah.">
+    <span class="qn">Soalan 4</span><p class="qt">Peluru 40.0 m/s pada 60°. Halaju di titik tertinggi?</p>
+    <div class="opts"><button class="opt" data-k="a"><span class="k">A</span>0 m/s</button><button class="opt" data-k="b"><span class="k">B</span>20.0 m/s mendatar</button><button class="opt" data-k="c"><span class="k">C</span>34.6 m/s</button></div><p class="fb"></p>
+  </div>
+  <div class="quiz" data-correct="c" data-explain="Kedua-dua jatuh menegak dari ketinggian sama dengan v₀ᵧ = 0, jadi masa sama: 2.70 s. x = 0.950 × 2.70 = 2.57 m.">
+    <span class="qn">Soalan 5</span><p class="qt">Cengkerik A jatuh (2.70 s). Cengkerik B lompat mendatar 0.950 m/s dari tebing sama. B mendarat sejauh…</p>
+    <div class="opts"><button class="opt" data-k="a"><span class="k">A</span>0.352 m</button><button class="opt" data-k="b"><span class="k">B</span>Masa B lebih lama, tak dapat kira</button><button class="opt" data-k="c"><span class="k">C</span>2.57 m</button></div><p class="fb"></p>
+  </div>
+  <div class="quiz" data-correct="a" data-explain="v_S/F = v_S/G − v_F/G = 18.0 − 13.0 = +5.0 m/s (ke kanan).">
+    <span class="qn">Soalan 6</span><p class="qt">Gerabak 13.0 m/s ke kanan. Skuter 18.0 m/s ke kanan (relatif tanah). Halaju skuter relatif gerabak?</p>
+    <div class="opts"><button class="opt" data-k="a"><span class="k">A</span>5.0 m/s kanan</button><button class="opt" data-k="b"><span class="k">B</span>31.0 m/s kanan</button><button class="opt" data-k="c"><span class="k">C</span>5.0 m/s kiri</button></div><p class="fb"></p>
+  </div>
+  <p class="score"></p>
+  </div>
+</div>
+</section>
+
+<section class="slide" data-ch="2" data-title="Ringkasan Bab 2">
+<div class="inner">
+  <span class="eyebrow">Ringkasan Bab 2</span>
+  <h2>Helaian formula Bab 2</h2>
+  <div class="tbl-wrap"><table class="t">
+    <tr><th>Topik</th><th>Formula</th></tr>
+    <tr><td>Halaju</td><td class="m">v<sub>av</sub> = Δx/Δt, v = dx/dt</td></tr>
+    <tr><td>Pecutan</td><td class="m">a<sub>av</sub> = Δv/Δt, a = dv/dt</td></tr>
+    <tr><td>Pecutan malar</td><td class="m">v = v₀+at; Δx = v₀t+½at²; v² = v₀²+2aΔx; Δx = ½(v₀+v)t</td></tr>
+    <tr><td>Jatuh bebas</td><td class="m">a<sub>y</sub> = −g = −9.81 m/s²</td></tr>
+    <tr><td>Projektil</td><td class="m">v₀ₓ = v₀cos θ, v₀ᵧ = v₀sin θ, T = 2v₀sin θ/g, H = v₀²sin²θ/2g, R = v₀²sin 2θ/g</td></tr>
+    <tr><td>Bulat</td><td class="m">v = 2πr/T, a<sub>rad</sub> = v²/R</td></tr>
+    <tr><td>Relatif</td><td class="m">v⃗<sub>P/A</sub> = v⃗<sub>P/B</sub> + v⃗<sub>B/A</sub></td></tr>
+  </table></div>
+  <div class="tip"><span class="tag">Seterusnya</span><p>Tekan <b>Bab 3</b> untuk Hukum Newton.</p></div>
+</div>
+</section>
+<!-- ===================== BAB 3 ===================== -->
+<section class="slide" data-ch="3" data-title="Mula: Bab 3">
+<div class="inner cover">
+  <span class="eyebrow">Bab 3 · SFT3033 Mechanics</span>
+  <div class="num">03</div>
+  <h1>Dynamics: Newton's Laws of Motion</h1>
+  <p class="lead">Kenapa objek bergerak? Jawapannya ialah daya.</p>
+  <div class="outcomes">
+    <div><b>1</b><span>Daya, dan <span class="hl">Hukum Newton Pertama, Kedua dan Ketiga</span>.</span></div>
+    <div><b>2</b><span>Berat, daya normal, geseran dan tegangan.</span></div>
+    <div><b>3</b><span>Guna <span class="hl">rajah jasad bebas (FBD)</span> untuk selesaikan masalah.</span></div>
+  </div>
+</div>
+</section>
+
+<section class="slide" data-ch="3" data-title="Daya &amp; daya bersih">
+<div class="inner">
+  <span class="eyebrow">3.1 · Force</span>
+  <h2>Daya: tolak atau tarik</h2>
+  <div class="def"><span class="tag">Definisi</span><p>Daya ialah tolakan atau tarikan. Unit: <b>newton (N)</b>. Daya ialah <b>vektor</b>.</p></div>
+  <p><b>Daya bersih</b> <span class="m">ΣF</span> = jumlah vektor semua daya. Kalau daya bersih = 0 N, daya-daya itu saling membatalkan.</p>
+  <div class="widget" data-w="tug">
+    <div class="wtitle">Tarik tali: ubah dua daya</div>
+  </div>
+</div>
+</section>
+
+<section class="slide" data-ch="3" data-title="Hukum Newton 1">
+<div class="inner">
+  <span class="eyebrow">3.2 · Newton's First Law</span>
+  <h2>Hukum Pertama: hukum inersia</h2>
+  <div class="def"><span class="tag">Hukum 1</span><p>Setiap objek kekal <b>pegun</b> atau bergerak dengan <b>halaju seragam dalam garis lurus</b>, selagi <b>tiada daya bersih</b> bertindak ke atasnya.</p></div>
+  <div class="grid2">
+    <div class="card"><h3>Inertial frame</h3><p>Kerangka rujukan di mana Hukum 1 sah. Bukan kerangka yang berputar atau memecut.</p></div>
+    <div class="card"><h3>Jisim = ukuran inersia</h3><p>Jisim besar → lebih susah ubah keadaan gerakan. Unit SI: <b>kg</b>.</p></div>
+  </div>
+  <div class="quiz" data-correct="c" data-explain="Halaju malar bermaksud a = 0, jadi ΣF = 0. Enjin menolak, tapi geseran dan rintangan udara menolak balik sama banyak.">
+    <span class="qn">Cuba</span><p class="qt">Kereta bergerak 80 km/h lurus, laju tetap. Daya bersih padanya ialah…</p>
+    <div class="opts"><button class="opt" data-k="a"><span class="k">A</span>Ke depan, sebab ia bergerak</button><button class="opt" data-k="b"><span class="k">B</span>Ke belakang</button><button class="opt" data-k="c"><span class="k">C</span>Sifar</button></div><p class="fb"></p>
+  </div>
+</div>
+</section>
+
+<section class="slide" data-ch="3" data-title="Jisim vs berat">
+<div class="inner">
+  <span class="eyebrow">3.2 &amp; 3.5 · Mass vs weight</span>
+  <h2>Jisim ≠ berat</h2>
+  <div class="vs">
+    <div class="vh">Mass (jisim)</div><div class="vh">Weight (berat)</div>
+    <div>Sifat objek untuk kekal dalam keadaan pegun atau bergerak</div><div>Daya graviti ke atas objek: <span class="m">W = mg</span></div>
+    <div>Skalar, unit <b>kg</b></div><div>Vektor (ke bawah), unit <b>N</b></div>
+    <div>Sama di mana-mana; tak boleh sifar</div><div>Bergantung pada <span class="m">g</span>; boleh sifar</div>
+    <div>Diukur dengan neraca biasa</div><div>Diukur dengan neraca spring</div>
+  </div>
+  <div class="widget" data-w="weight">
+    <div class="wtitle">Timbang diri anda di planet lain</div>
+  </div>
+</div>
+</section>
+
+<section class="slide" data-ch="3" data-title="Hukum Newton 2">
+<div class="inner">
+  <span class="eyebrow">3.3 · Newton's Second Law</span>
+  <h2>Hukum Kedua: ΣF = ma</h2>
+  <div class="def"><span class="tag">Hukum 2</span><p>Pecutan <b>berkadar terus</b> dengan daya bersih dan <b>berkadar songsang</b> dengan jisim.</p></div>
+  <div class="formula">Σ<i>F</i>⃗ = <i>m</i><i>a</i>⃗<small>ΣF = daya bersih (N), m = jisim (kg), a = pecutan (m/s²)</small></div>
+  <div class="widget" data-w="fma">
+    <div class="wtitle">Tolak kotak</div>
+  </div>
+  <div class="tip"><span class="tag">Contoh tutorial</span><p>Pemain luncur 68.5 kg, dari 2.40 m/s ke 0 dalam 3.52 s: <span class="m">a = −0.682 m/s²</span>, <span class="m">f = ma = <b>−46.7 N</b></span>.</p></div>
+</div>
+</section>
+
+<section class="slide" data-ch="3" data-title="Hukum Newton 3">
+<div class="inner">
+  <span class="eyebrow">3.4 · Newton's Third Law</span>
+  <h2>Hukum Ketiga: tindakan dan tindak balas</h2>
+  <div class="def"><span class="tag">Hukum 3</span><p>Untuk setiap daya <b>tindakan</b>, ada daya <b>tindak balas</b> yang <b>sama magnitud</b> tetapi <b>berlawanan arah</b>: <span class="m">F⃗₁ = −F⃗₂</span>.</p></div>
+  <div class="grid2">
+    <div class="card"><h3>Tolak dinding</h3><p>Anda tolak dinding → dinding tolak anda balik.</p></div>
+    <div class="card"><h3>Roket</h3><p>Enjin tolak gas ke belakang → gas tolak roket ke depan.</p></div>
+  </div>
+  <div class="warn"><span class="tag">Perangkap</span><p>Pasangan tindakan dan tindak balas bertindak pada <b>dua objek berbeza</b>, jadi ia <b>tak</b> membatalkan satu sama lain.</p></div>
+  <div class="quiz" data-correct="b" data-explain="Berat buku = Bumi tarik buku. Pasangannya ialah buku tarik Bumi ke atas. Daya normal juga sama besar, tetapi kedua-dua daya itu bertindak pada objek yang sama (buku), jadi bukan pasangan Hukum 3.">
+    <span class="qn">Cuba</span><p class="qt">Buku atas meja. Pasangan Hukum 3 bagi "Bumi tarik buku ke bawah" ialah…</p>
+    <div class="opts"><button class="opt" data-k="a"><span class="k">A</span>Meja tolak buku ke atas (normal)</button><button class="opt" data-k="b"><span class="k">B</span>Buku tarik Bumi ke atas</button><button class="opt" data-k="c"><span class="k">C</span>Buku tolak meja ke bawah</button></div><p class="fb"></p>
+  </div>
+</div>
+</section>
+
+<section class="slide" data-ch="3" data-title="Daya normal &amp; lif">
+<div class="inner">
+  <span class="eyebrow">3.6 · Normal force</span>
+  <h2>Daya normal: serenjang dengan permukaan</h2>
+  <div class="def"><span class="tag">Definisi</span><p>Daya <b>serenjang</b> yang bertindak apabila dua objek bersentuhan. Ia sebesar yang perlu sahaja. Atas meja: <span class="m">N = mg</span>. Atas cerun: <span class="m">N = mg cos θ</span>.</p></div>
+  <p>Tutorial S5: berat normal anda <b>625 N</b>. Penimbang dalam lif membaca daya normal <span class="m">N</span>.</p>
+  <div class="widget" data-w="elevator">
+    <div class="wtitle">Lif: ubah pecutan</div>
+  </div>
+</div>
+</section>
+
+<section class="slide" data-ch="3" data-title="Geseran">
+<div class="inner">
+  <span class="eyebrow">3.7 · Friction</span>
+  <h2>Geseran statik vs kinetik</h2>
+  <div class="grid2">
+    <div class="formula"><i>f<sub>s</sub></i> ≤ μ<sub>s</sub><i>N</i><small>statik: objek belum bergerak</small></div>
+    <div class="formula"><i>f<sub>k</sub></i> = μ<sub>k</sub><i>N</i><small>kinetik: objek sedang menggelongsor</small></div>
+  </div>
+  <div class="tip"><span class="tag">Ingat</span><p>Biasanya <span class="m">μ<sub>s</sub> &gt; μ<sub>k</sub></span>. Susah nak mula tolak, lepas bergerak jadi lebih senang.</p></div>
+  <div class="widget" data-w="friction">
+    <div class="wtitle">Tolak kotak 20 kg (kayu atas kayu)</div>
+  </div>
+</div>
+</section>
+
+<section class="slide" data-ch="3" data-title="Cerun &amp; FBD">
+<div class="inner">
+  <span class="eyebrow">3.7 &amp; 3.8 · Incline</span>
+  <h2>Objek atas cerun</h2>
+  <p>Tiga daya: <b>normal</b> (serenjang permukaan), <b>graviti</b> (ke bawah), <b>geseran</b> (selari permukaan). Pecahkan <span class="m">mg</span>: <span class="m">mg sin θ</span> selari cerun, <span class="m">mg cos θ</span> serenjang.</p>
+  <div class="widget" data-w="incline">
+    <div class="wtitle">Ubah sudut cerun</div>
+  </div>
+  <div class="tip"><span class="tag">Tutorial S8</span><p>Batu di 36°, μ<sub>s</sub> = 0.65: <span class="m">tan 36° = 0.727 &gt; 0.65</span> → batu <b>menggelongsor turun</b> dengan <span class="m">a = 2.19 m/s²</span>.</p></div>
+</div>
+</section>
+
+<section class="slide" data-ch="3" data-title="Tegangan">
+<div class="inner">
+  <span class="eyebrow">3.8 · Tension</span>
+  <h2>Tegangan: tali hanya menarik</h2>
+  <div class="def"><span class="tag">Definisi</span><p>Daya yang dihantar melalui tali, kabel atau rantai apabila ditarik tegang. Tali <b>tak boleh menolak</b>.</p></div>
+  <h3>Tutorial S7: bola pemusnah 3620 kg</h3>
+  <div class="given"><span>T<sub>A</sub> mendatar</span><span>T<sub>B</sub> 40° dari menegak</span><span>pegun → ΣF = 0</span></div>
+  <div class="steps">
+    <div class="step"><span class="sn">1</span><div>Berat: <span class="m">mg = 3620 × 9.80 = 3.548 × 10⁴ N</span></div></div>
+    <div class="step"><span class="sn">2</span><div>ΣF<sub>y</sub> = 0: <span class="m">T<sub>B</sub> cos 40° = mg</span> → <span class="m">T<sub>B</sub> = 3.548×10⁴ / 0.766 = <b>4.63 × 10⁴ N</b></span></div></div>
+    <div class="step"><span class="sn">3</span><div>ΣF<sub>x</sub> = 0: <span class="m">T<sub>A</sub> = T<sub>B</sub> sin 40°</span></div></div>
+    <div class="step ans"><span class="sn">✓</span><div><span class="m">T<sub>A</sub> = <b>2.98 × 10⁴ N</b></span></div></div>
+  </div>
+  <div class="btnrow"><button class="btn next-step">Langkah seterusnya</button><button class="btn ghost reset-step">Ulang</button></div>
+</div>
+</section>
+
+<section class="slide" data-ch="3" data-title="Resipi FBD">
+<div class="inner">
+  <span class="eyebrow">3.8 · Free body diagram</span>
+  <h2>Resipi 5 langkah untuk semua soalan Newton</h2>
+  <div class="outcomes">
+    <div><b>1</b><span><b>Asingkan objek.</b> Lukis objek sebagai kotak atau titik.</span></div>
+    <div><b>2</b><span><b>Lukis semua daya</b> yang bertindak <i>pada</i> objek: berat, normal, geseran, tegangan, tolakan.</span></div>
+    <div><b>3</b><span><b>Pilih paksi.</b> Atas cerun: x selari permukaan, y serenjang.</span></div>
+    <div><b>4</b><span><b>Tulis ΣF<sub>x</sub> = ma<sub>x</sub> dan ΣF<sub>y</sub> = ma<sub>y</sub></b>. Pegun atau halaju malar → = 0.</span></div>
+    <div><b>5</b><span><b>Selesaikan.</b> Dua objek bersambung? Satu FBD setiap objek, dengan <span class="m">a</span> yang sama.</span></div>
+  </div>
+  <div class="warn"><span class="tag">Jangan</span><p>Jangan masukkan "ma" sebagai daya dalam FBD. Hanya daya sebenar yang dilukis.</p></div>
+</div>
+</section>
+
+<section class="slide" data-ch="3" data-title="Objek bersambung">
+<div class="inner">
+  <span class="eyebrow">3.8 · Connected objects</span>
+  <h2>Blok atas meja + blok tergantung</h2>
+  <p>Tutorial S9: blok A di atas meja, disambung melalui takal ke blok B yang tergantung.</p>
+  <div class="grid2">
+    <div class="card"><h3>Blok A</h3><p class="m">T − μ<sub>k</sub>m<sub>A</sub>g = m<sub>A</sub>a</p></div>
+    <div class="card"><h3>Blok B</h3><p class="m">m<sub>B</sub>g − T = m<sub>B</sub>a</p></div>
+  </div>
+  <div class="formula">Tambah: <i>a</i> = (<i>m<sub>B</sub></i> − μ<sub>k</sub><i>m<sub>A</sub></i>)<i>g</i> / (<i>m<sub>A</sub></i> + <i>m<sub>B</sub></i>)</div>
+  <div class="widget" data-w="pulley">
+    <div class="wtitle">Ubah jisim dan geseran</div>
+  </div>
+</div>
+</section>
+
+<section class="slide" data-ch="3" data-title="Kuiz Bab 3">
+<div class="inner">
+  <span class="eyebrow">Kuiz Bab 3</span>
+  <h2>Uji diri: 6 soalan</h2>
+  <div class="quizset">
+  <div class="quiz" data-correct="b" data-explain="Jisim tak berubah: m = 17.5/9.80 = 1.79 kg. g_bulan = 3.24/1.79 = 1.81 m/s².">
+    <span class="qn">Soalan 1</span><p class="qt">Beg 17.5 N di Bumi, 3.24 N di bulan. Jisimnya di bulan?</p>
+    <div class="opts"><button class="opt" data-k="a"><span class="k">A</span>0.331 kg</button><button class="opt" data-k="b"><span class="k">B</span>1.79 kg</button><button class="opt" data-k="c"><span class="k">C</span>3.24 kg</button></div><p class="fb"></p>
+  </div>
+  <div class="quiz" data-correct="c" data-explain="Lif memecut ke atas: N − mg = ma, jadi N = m(g + a) = 63.8(9.80 + 2.50) = 784 N. Bacaan lebih besar daripada berat.">
+    <span class="qn">Soalan 2</span><p class="qt">Berat 625 N. Lif memecut ke atas 2.50 m/s². Bacaan penimbang?</p>
+    <div class="opts"><button class="opt" data-k="a"><span class="k">A</span>625 N</button><button class="opt" data-k="b"><span class="k">B</span>466 N</button><button class="opt" data-k="c"><span class="k">C</span>784 N</button></div><p class="fb"></p>
+  </div>
+  <div class="quiz" data-correct="a" data-explain="Bergerak naik: geseran ke bawah cerun, sama arah dengan mg sin θ. a = −g(sin 36° + 0.45 cos 36°) = −9.33 m/s².">
+    <span class="qn">Soalan 3</span><p class="qt">Batu menggelongsor NAIK cerun 36°, μ<sub>k</sub> = 0.45. Magnitud nyahpecutan?</p>
+    <div class="opts"><button class="opt" data-k="a"><span class="k">A</span>9.33 m/s²</button><button class="opt" data-k="b"><span class="k">B</span>2.19 m/s²</button><button class="opt" data-k="c"><span class="k">C</span>5.76 m/s²</button></div><p class="fb"></p>
+  </div>
+  <div class="quiz" data-correct="b" data-explain="Halaju malar → a = 0 → ΣF = 0. Ini Hukum Newton Pertama.">
+    <span class="qn">Soalan 4</span><p class="qt">Kotak diturunkan atas ramp pada laju malar 15 cm/s. Daya bersih pada kotak?</p>
+    <div class="opts"><button class="opt" data-k="a"><span class="k">A</span>Ke bawah ramp</button><button class="opt" data-k="b"><span class="k">B</span>Sifar</button><button class="opt" data-k="c"><span class="k">C</span>Ke atas ramp</button></div><p class="fb"></p>
+  </div>
+  <div class="quiz" data-correct="c" data-explain="a = v²/(2Δx) = (3.00×10⁶)²/(2 × 0.0180) = 2.50×10¹⁴ m/s². F = ma = 9.11×10⁻³¹ × 2.50×10¹⁴ = 2.28×10⁻¹⁶ N.">
+    <span class="qn">Soalan 5</span><p class="qt">Elektron (9.11×10⁻³¹ kg) dari pegun ke 3.00×10⁶ m/s dalam 1.80 cm. Daya bersih?</p>
+    <div class="opts"><button class="opt" data-k="a"><span class="k">A</span>2.50 × 10¹⁴ N</button><button class="opt" data-k="b"><span class="k">B</span>1.52 × 10⁻²² N</button><button class="opt" data-k="c"><span class="k">C</span>2.28 × 10⁻¹⁶ N</button></div><p class="fb"></p>
+  </div>
+  <div class="quiz" data-correct="a" data-explain="Kedua-dua daya bertindak pada objek berbeza (anda dan dinding), sama besar dan berlawanan arah. Inilah ciri pasangan Hukum 3.">
+    <span class="qn">Soalan 6</span><p class="qt">Anda tolak dinding dengan 50 N. Dinding tolak anda dengan…</p>
+    <div class="opts"><button class="opt" data-k="a"><span class="k">A</span>50 N, arah berlawanan</button><button class="opt" data-k="b"><span class="k">B</span>0 N, sebab dinding tak bergerak</button><button class="opt" data-k="c"><span class="k">C</span>Kurang daripada 50 N</button></div><p class="fb"></p>
+  </div>
+  <p class="score"></p>
+  </div>
+</div>
+</section>
+
+<section class="slide" data-ch="3" data-title="Ringkasan Bab 3">
+<div class="inner">
+  <span class="eyebrow">Ringkasan Bab 3</span>
+  <h2>Helaian formula Bab 3</h2>
+  <div class="tbl-wrap"><table class="t">
+    <tr><th>Topik</th><th>Formula / idea</th></tr>
+    <tr><td>Hukum 1</td><td>ΣF = 0 ⇔ pegun atau halaju malar</td></tr>
+    <tr><td>Hukum 2</td><td class="m">ΣF⃗ = ma⃗</td></tr>
+    <tr><td>Hukum 3</td><td class="m">F⃗₁ = −F⃗₂ (dua objek berbeza)</td></tr>
+    <tr><td>Berat</td><td class="m">W = mg, g = 9.81 m/s²</td></tr>
+    <tr><td>Normal</td><td class="m">rata: N = mg; cerun: N = mg cos θ; lif: N = m(g + a)</td></tr>
+    <tr><td>Geseran</td><td class="m">f<sub>k</sub> = μ<sub>k</sub>N, f<sub>s</sub> ≤ μ<sub>s</sub>N</td></tr>
+    <tr><td>Cerun</td><td class="m">selari: mg sin θ; kekal pegun jika tan θ ≤ μ<sub>s</sub></td></tr>
+  </table></div>
+  <div class="tip"><span class="tag">Tahniah</span><p>Anda dah habis Bab 1 hingga 3. Ulang mana-mana kuiz sampai dapat semua betul.</p></div>
+</div>
+</section>
+
+  </main>
+  <footer class="nav">
+    <button class="nbtn" id="prev" aria-label="Slaid sebelum">‹ Sebelum</button>
+    <div class="count" id="count">1 / 1</div>
+    <button class="nbtn primary" id="next" aria-label="Slaid seterusnya">Seterusnya ›</button>
+  </footer>
+  <aside class="drawer" id="drawer" aria-label="Senarai slaid">
+    <div class="drawer-head"><b>Senarai slaid</b><button class="x" id="closeDrawer" aria-label="Tutup">✕</button></div>
+    <ol id="toc"></ol>
+  </aside>
+</div>
+<script>
+(function(){
+"use strict";
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>Array.from(r.querySelectorAll(s));
+const G=9.81, D2R=Math.PI/180;
+const fmt=(n,d=2)=>{ if(!isFinite(n)) return "—"; const v=Math.abs(n)<1e-9?0:n; return v.toFixed(d).replace("-","−"); };
+const sci=(n,p=3)=>{ if(n===0) return "0"; const a=Math.abs(n); if(a>=1e-3&&a<1e5) return fmt(n, Math.max(0,p-1-Math.floor(Math.log10(a)))); const e=Math.floor(Math.log10(a)); const m=n/Math.pow(10,e); return fmt(m,p-1)+" × 10"+sup(e); };
+const SUP={"-":"⁻","0":"⁰","1":"¹","2":"²","3":"³","4":"⁴","5":"⁵","6":"⁶","7":"⁷","8":"⁸","9":"⁹"};
+const sup=e=>String(e).split("").map(c=>SUP[c]||c).join("");
+const css=v=>getComputedStyle(document.body).getPropertyValue(v).trim();
+function h(html){ const t=document.createElement("template"); t.innerHTML=html.trim(); return t.content.firstChild; }
+let uid=0;
+function slider(parent,label,min,max,step,val,unit,cb){
+  const id="s"+(++uid);
+  const row=h(`<div class="ctrl"><label for="${id}">${label}</label><input type="range" id="${id}" min="${min}" max="${max}" step="${step}" value="${val}"><output for="${id}"></output></div>`);
+  parent.appendChild(row);
+  const inp=$("input",row), out=$("output",row);
+  const dec=(String(step).split(".")[1]||"").length;
+  const upd=()=>{ out.textContent=Number(inp.value).toFixed(dec)+(unit?" "+unit:""); cb&&cb(); };
+  inp.addEventListener("input",upd);
+  setTimeout(upd,0);
+  return ()=>Number(inp.value);
+}
+function readout(parent,items){ const w=h(`<div class="readout"></div>`); const map={}; items.forEach(([k,l])=>{ const d=h(`<div class="ro"><div class="l">${l}</div><div class="v">—</div></div>`); w.appendChild(d); map[k]=$(".v",d); }); parent.appendChild(w); return map; }
+function seg(parent,opts,cur,cb){ const s=h(`<div class="seg" role="group"></div>`); opts.forEach(([k,l])=>{ const b=h(`<button type="button" data-k="${k}">${l}</button>`); if(k===cur) b.classList.add("on"); b.onclick=()=>{ $$("button",s).forEach(x=>x.classList.toggle("on",x===b)); cb(k); }; s.appendChild(b); }); parent.appendChild(s); return s; }
+function svgArrow(x1,y1,x2,y2,col,w=4,id){ const L=Math.hypot(x2-x1,y2-y1); if(L<2) return ""; const ang=Math.atan2(y2-y1,x2-x1), hs=Math.min(14,L*0.45); const bx=x2-hs*Math.cos(ang), by=y2-hs*Math.sin(ang); const p1=[bx+hs*0.5*Math.sin(ang),by-hs*0.5*Math.cos(ang)], p2=[bx-hs*0.5*Math.sin(ang),by+hs*0.5*Math.cos(ang)];
+  return `<line x1="${x1}" y1="${y1}" x2="${bx}" y2="${by}" style="stroke:${col};stroke-width:${w};stroke-linecap:round"/><polygon points="${x2},${y2} ${p1[0]},${p1[1]} ${p2[0]},${p2[1]}" style="fill:${col}"/>`; }
+const T=(x,y,s,col="#13233A",size=16,anchor="middle",it=false)=>`<text x="${x}" y="${y}" text-anchor="${anchor}" style="fill:${col};font-size:${size}px;font-family:Lexend,system-ui,sans-serif${it?";font-style:italic":""}">${s}</text>`;
+const INK="#13233A", MUTED="#4F6075", LINE="#C3CEDB", BLUE="#1E63D6", ORANGE="#DD5F0E", GREEN="#17804F", RED="#BE3229", TEAL="#0E8C6C", PURPLE="#7A3FC4";
+function isOn(el){ const s=el.closest(".slide"); return s&&s.classList.contains("on"); }
+function canvasFit(c,w,hh){ const r=window.devicePixelRatio||1; c.width=w*r; c.height=hh*r; const x=c.getContext("2d"); x.setTransform(r,0,0,r,0,0); return x; }
+
+/* ================= NAV ================= */
+const slides=$$(".slide");
+const byCh={1:[],2:[],3:[]};
+slides.forEach(s=>byCh[s.dataset.ch].push(s));
+let ch=1, idx=0;
+const memo={1:0,2:0,3:0};
+try{ const m=JSON.parse(localStorage.getItem("sft3033pos")||"null"); if(m) Object.assign(memo,m); }catch(e){}
+function save(){ try{ localStorage.setItem("sft3033pos",JSON.stringify(memo)); }catch(e){} }
+function show(c,i,dir){
+  const list=byCh[c]; i=Math.max(0,Math.min(list.length-1,i));
+  slides.forEach(s=>s.classList.remove("on","back"));
+  ch=c; idx=i; memo[c]=i; save();
+  document.body.dataset.ch=c;
+  const s=list[i]; s.classList.add("on"); if(dir<0) s.classList.add("back"); s.scrollTop=0;
+  $$(".tab").forEach(t=>t.classList.toggle("on",t.dataset.go==c));
+  $("#count").textContent=`Slaid ${i+1} / ${list.length}`;
+  $("#bar").style.width=((i+1)/list.length*100)+"%";
+  $("#prev").disabled=(i===0);
+  $("#next").textContent= i===list.length-1 ? (c<3?"Bab "+(c+1)+" ›":"Tamat ✓") : "Seterusnya ›";
+  if(location.hash!=="#bab"+c){ try{ history.replaceState(null,"","#bab"+c); }catch(e){ } }
+  buildToc();
+  s.dispatchEvent(new Event("shown"));
+}
+function next(){ if(idx<byCh[ch].length-1) show(ch,idx+1,1); else if(ch<3) show(ch+1,0,1); }
+function prev(){ if(idx>0) show(ch,idx-1,-1); }
+$("#next").onclick=next; $("#prev").onclick=prev;
+$$(".tab").forEach(t=>t.onclick=()=>{ const c=+t.dataset.go; show(c,c===ch?idx:memo[c],1); });
+document.addEventListener("keydown",e=>{ if(/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)) return; if(e.key==="ArrowRight") next(); if(e.key==="ArrowLeft") prev(); });
+let tx=null,ty=null;
+$("#stage").addEventListener("touchstart",e=>{ if(e.target.closest(".widget,input,select,canvas,svg")){tx=null;return;} tx=e.touches[0].clientX; ty=e.touches[0].clientY; },{passive:true});
+$("#stage").addEventListener("touchend",e=>{ if(tx===null) return; const dx=e.changedTouches[0].clientX-tx, dy=e.changedTouches[0].clientY-ty; if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.5){ dx<0?next():prev(); } tx=null; },{passive:true});
+function buildToc(){ const ol=$("#toc"); ol.innerHTML=""; byCh[ch].forEach((s,i)=>{ const li=h(`<li><button type="button"><span class="n">${i+1}</span><span>${s.dataset.title}</span></button></li>`); const b=$("button",li); if(i===idx) b.classList.add("cur"); b.onclick=()=>{ show(ch,i,1); $("#drawer").classList.remove("open"); }; ol.appendChild(li); }); }
+$("#menuBtn").onclick=()=>$("#drawer").classList.add("open");
+$("#closeDrawer").onclick=()=>$("#drawer").classList.remove("open");
+window.addEventListener("hashchange",()=>{ const m=location.hash.match(/^#bab([123])$/); if(m&&+m[1]!==ch) show(+m[1],memo[+m[1]],1); });
+
+/* ================= STEPS ================= */
+$$(".next-step").forEach(b=>{
+  const row=b.parentElement, steps=row.previousElementSibling, rs=$(".reset-step",row);
+  const all=$$(".step",steps);
+  b.onclick=()=>{ const n=all.find(s=>!s.classList.contains("show")); if(n){ n.classList.add("show"); } if(!all.find(s=>!s.classList.contains("show"))){ b.disabled=true; b.textContent="Semua langkah ditunjuk ✓"; } };
+  if(rs) rs.onclick=()=>{ all.forEach(s=>s.classList.remove("show")); b.disabled=false; b.textContent="Langkah seterusnya"; };
+});
+
+/* ================= QUIZ ================= */
+$$(".quiz").forEach(q=>{
+  const fb=$(".fb",q), right=q.dataset.correct;
+  $$(".opt",q).forEach(o=>o.onclick=()=>{
+    if(q.dataset.done) return; q.dataset.done=o.dataset.k===right?"1":"0";
+    $$(".opt",q).forEach(x=>{ x.disabled=true; if(x.dataset.k===right) x.classList.add("right"); });
+    if(o.dataset.k!==right) o.classList.add("wrong");
+    const ok=o.dataset.k===right;
+    fb.className="fb "+(ok?"ok":"no");
+    fb.innerHTML=(ok?"<b>Betul!</b> ":"<b>Belum tepat.</b> Jawapan: <b>"+right.toUpperCase()+"</b>. ")+q.dataset.explain;
+    const set=q.closest(".quizset"); if(set) scoreSet(set);
+  });
+});
+function scoreSet(set){ const qs=$$(".quiz",set), done=qs.filter(q=>q.dataset.done); const sc=$(".score",set); if(done.length<qs.length){ sc.textContent=`Dijawab ${done.length} / ${qs.length}`; return; } const ok=done.filter(q=>q.dataset.done==="1").length; sc.innerHTML=`Markah: ${ok} / ${qs.length} ${ok===qs.length?"· Hebat! 🎉":"· Baca penerangan, kemudian cuba lagi."} `; const b=h(`<button class="btn ghost" type="button" style="margin-left:8px">Cuba lagi</button>`); b.onclick=()=>{ qs.forEach(q=>{ delete q.dataset.done; $$(".opt",q).forEach(x=>{x.disabled=false;x.classList.remove("right","wrong");}); $(".fb",q).className="fb"; }); sc.textContent=""; }; sc.appendChild(b); }
+
+/* ================= WIDGETS ================= */
+const W={};
+
+W.prefix=el=>{
+  const P=[["G",9],["M",6],["k",3],["",0],["c",-2],["m",-3],["µ",-6],["n",-9]];
+  const opts=sel=>P.map(([p,e])=>`<option value="${e}" ${e===sel?"selected":""}>${p||"(tiada)"}m</option>`).join("");
+  const row=h(`<div class="row"><input type="number" value="2.0" step="any" style="width:110px" aria-label="Nilai"><select aria-label="Dari">${opts(-6)}</select><span>→</span><select aria-label="Ke">${opts(-2)}</select></div>`);
+  el.appendChild(row); const work=h(`<div class="work"></div>`); el.appendChild(work);
+  const [inp,s1,s2]=[$("input",row),...$$("select",row)];
+  const name=e=>(P.find(p=>p[1]==e)[0]||"")+"m";
+  const upd=()=>{ const v=parseFloat(inp.value)||0, e1=+s1.value, e2=+s2.value, sh=e1-e2, r=v*Math.pow(10,sh);
+    work.innerHTML=`${v} ${name(e1)} = ${v} × 10${sup(e1)} m<br>= ${v} × 10${sup(e1)} ÷ 10${sup(e2)} ${name(e2)} = ${v} × 10${sup(sh)} ${name(e2)}<br><b>= ${sci(r,3)} ${name(e2)}</b>`; };
+  [inp,s1,s2].forEach(x=>x.addEventListener("input",upd)); upd();
+  el.appendChild(h(`<p class="kv">Contoh: bakteria berdiameter 2.0 µm = 2.0 × 10⁻⁴ cm (Tutorial 1.3 S5)</p>`));
+};
+
+W.dims=el=>{
+  const E=[
+    {n:"v = at",lhs:"[L][T⁻¹]",terms:[["at","[L][T⁻²] × [T]","[L][T⁻¹]"]],ok:true},
+    {n:"v = u + at",lhs:"[L][T⁻¹]",terms:[["u","[L][T⁻¹]","[L][T⁻¹]"],["at","[L][T⁻²] × [T]","[L][T⁻¹]"]],ok:true},
+    {n:"v_f = v_i + ax",lhs:"[L][T⁻¹]",terms:[["v_i","[L][T⁻¹]","[L][T⁻¹]"],["ax","[L][T⁻²] × [L]","[L²][T⁻²]"]],ok:false},
+    {n:"s = ut + ½at²",lhs:"[L]",terms:[["ut","[L][T⁻¹] × [T]","[L]"],["½at²","[L][T⁻²] × [T²]","[L]"]],ok:true},
+    {n:"v² = u² + 2as",lhs:"[L²][T⁻²]",terms:[["u²","([L][T⁻¹])²","[L²][T⁻²]"],["2as","[L][T⁻²] × [L]","[L²][T⁻²]"]],ok:true},
+    {n:"s = vt²",lhs:"[L]",terms:[["vt²","[L][T⁻¹] × [T²]","[L][T]"]],ok:false},
+    {n:"y = (2 m) cos(kx), k = 2 m⁻¹",lhs:"[L]",terms:[["kx","[L⁻¹] × [L]","tiada dimensi ✓ (sudut)"],["(2 m)cos(kx)","[L] × 1","[L]"]],ok:true}
+  ];
+  const sel=h(`<select aria-label="Persamaan">${E.map((e,i)=>`<option value="${i}">${e.n}</option>`).join("")}</select>`); el.appendChild(sel);
+  const box=h(`<div class="work"></div>`); el.appendChild(box); const v=h(`<div class="verdict"></div>`); el.appendChild(v);
+  const upd=()=>{ const e=E[+sel.value]; box.innerHTML=`LHS: ${e.lhs}<br>`+e.terms.map(t=>`${t[0]}: ${t[1]} = <b>${t[2]}</b>`).join("<br>");
+    v.className="verdict "+(e.ok?"ok":"no"); v.textContent=e.ok?"✓ Konsisten: setiap sebutan sama dimensi dengan LHS.":"✗ Tidak konsisten: ada sebutan yang dimensinya berbeza."; };
+  sel.onchange=upd; upd();
+};
+
+W.speedconv=el=>{
+  const U={ms:"m/s",kmh:"km/h",mph:"mi/h"};
+  const toMS={ms:[],kmh:["(1000 m / 1 km)","(1 h / 3600 s)"],mph:["(1.609 km / 1 mi)","(1000 m / 1 km)","(1 h / 3600 s)"]};
+  const fromMS={ms:[],kmh:["(1 km / 1000 m)","(3600 s / 1 h)"],mph:["(1 km / 1000 m)","(1 mi / 1.609 km)","(3600 s / 1 h)"]};
+  const k={ms:1,kmh:1000/3600,mph:1609/3600};
+  const opt=s=>Object.entries(U).map(([a,b])=>`<option value="${a}" ${a===s?"selected":""}>${b}</option>`).join("");
+  const row=h(`<div class="row"><input type="number" value="56" step="any" style="width:110px" aria-label="Nilai"><select aria-label="Dari">${opt("ms")}</select><span>→</span><select aria-label="Ke">${opt("mph")}</select></div>`); el.appendChild(row);
+  const work=h(`<div class="work"></div>`); el.appendChild(work);
+  const [inp,a,b]=[$("input",row),...$$("select",row)];
+  const upd=()=>{ const v=parseFloat(inp.value)||0; let f=[]; if(a.value!==b.value){ f=a.value==="ms"?fromMS[b.value]:b.value==="ms"?toMS[a.value]:toMS[a.value].concat(fromMS[b.value]); }
+    const r=v*k[a.value]/k[b.value];
+    work.innerHTML=`${v} ${U[a.value]}`+(f.length?" × "+f.join(" × "):"")+`<br><b>= ${fmt(r,r>=100?1:3)} ${U[b.value]}</b>`; };
+  [inp,a,b].forEach(x=>x.addEventListener("input",upd)); upd();
+  el.appendChild(h(`<p class="kv">Latihan nota: 56 m/s → mi/h ≈ 125 mi/h</p>`));
+};
+
+W.sigfig=el=>{
+  const row=h(`<div class="row"><input type="text" value="0.004050" style="width:180px" aria-label="Nombor" inputmode="decimal"><label>Bundar ke <select aria-label="Bilangan s.f.">${[1,2,3,4,5,6].map(n=>`<option ${n===3?"selected":""}>${n}</option>`).join("")}</select> s.f.</label></div>`); el.appendChild(row);
+  const out=h(`<div class="work"></div>`); el.appendChild(out);
+  const [inp,sel]=[$("input",row),$("select",row)];
+  const upd=()=>{ let s=inp.value.trim().replace(/\s/g,"").replace("×10^","e").replace("x10^","e"); let mant=s.split(/e/i)[0].replace(/^[+-]/,""); const exp=s.split(/e/i)[1];
+    if(!/^\d*\.?\d+$|^\d+\.$/.test(mant)){ out.innerHTML="Taip nombor seperti 0.004050, 384000000 atau 8.1877e-14"; return; }
+    const hasDot=mant.includes("."); const chars=mant.split(""); let seenNZ=false; const cls=chars.map(c=>{ if(c===".") return "dot"; if(c!=="0"){seenNZ=true;return "s";} return seenNZ?"z":"lead"; });
+    let amb=false;
+    if(!hasDot){ for(let i=cls.length-1;i>=0;i--){ if(cls[i]==="z"){cls[i]="amb";amb=true;} else break; } }
+    cls.forEach((c,i)=>{ if(c==="z") cls[i]="s"; });
+    const n=cls.filter(c=>c==="s").length;
+    const html=chars.map((c,i)=>cls[i]==="s"?`<b style="color:${GREEN}">${c}</b>`:cls[i]==="amb"?`<span style="color:${ORANGE}">${c}</span>`:`<span style="color:#9AA9BC">${c}</span>`).join("")+(exp?` × 10${sup(exp)}`:"");
+    const val=parseFloat(s); const r=Number(val.toPrecision(+sel.value));
+    out.innerHTML=`${html}<br><b>${n} angka bererti</b>${amb?` <span style="color:${ORANGE}">(sifar belakang tanpa titik perpuluhan: tak pasti; tulis dalam bentuk saintifik)</span>`:""}<br>Bundar ke ${sel.value} s.f.: <b>${sci(r,+sel.value)}</b>`; };
+  inp.addEventListener("input",upd); sel.addEventListener("change",upd); upd();
+  el.appendChild(h(`<p class="kv"><span style="color:${GREEN}">■ bererti</span><span style="color:#9AA9BC">■ tak bererti</span><span style="color:${ORANGE}">■ tak pasti</span></p>`));
+};
+
+W.sorter=el=>{
+  const items=[["1 m/s","S","Tiada arah, jadi laju"],["1 m/s ke kanan","V","Ada arah, jadi halaju"],["123 m³","S","Isipadu tiada arah"],["2 J","S","Tenaga tiada arah"],["−0.5 m/s²","V","Tanda − menunjukkan arah pecutan"],["displacement","V","Perubahan kedudukan, ada arah"],["mass","S","Tiada arah"],["weight","V","Sentiasa ke bawah"],["temperature","S","Tiada arah"],["force","V","Tolakan atau tarikan ke satu arah"]];
+  const g=h(`<div style="display:grid;gap:8px"></div>`); el.appendChild(g); const sc=h(`<p class="kv"></p>`); el.appendChild(sc);
+  let ok=0,done=0;
+  items.forEach(([n,a,why])=>{ const r=h(`<div class="row" style="justify-content:space-between;border:1px solid ${LINE};border-radius:12px;padding:8px 12px"><b>${n}</b><span class="row" style="gap:6px"><button class="btn ghost" type="button" data-k="S" style="padding:6px 12px">Skalar</button><button class="btn ghost" type="button" data-k="V" style="padding:6px 12px">Vektor</button></span><span class="why" style="flex-basis:100%;font-size:14px;display:none"></span></div>`);
+    $$("button",r).forEach(b=>b.onclick=()=>{ if(r.dataset.d) return; r.dataset.d=1; done++; const good=b.dataset.k===a; if(good) ok++; r.style.background=good?"var(--good-soft)":"var(--bad-soft)"; const w=$(".why",r); w.style.display="block"; w.textContent=(good?"✓ ":"✗ Sebenarnya "+(a==="S"?"skalar":"vektor")+". ")+why; sc.textContent=`Betul ${ok} / ${done}`+(done===items.length?" · Siap!":""); });
+    g.appendChild(r); });
+};
+
+W.vadd=el=>{
+  const svg=h(`<svg class="fig" viewBox="0 0 420 300" aria-label="Penambahan vektor"></svg>`); el.appendChild(svg);
+  const r=readout(el,[["rx","R<sub>x</sub>"],["ry","R<sub>y</sub>"],["r","|R|"],["t","θ dari +x"]]);
+  const a=slider(el,"|A|",1,10,0.5,6,"",d), at=slider(el,"Sudut A",0,360,5,30,"°",d), b=slider(el,"|B|",1,10,0.5,5,"",d), bt=slider(el,"Sudut B",0,360,5,120,"°",d);
+  function d(){ const S=13, ox=210, oy=160;
+    const ax=a()*Math.cos(at()*D2R), ay=a()*Math.sin(at()*D2R), bx=b()*Math.cos(bt()*D2R), by=b()*Math.sin(bt()*D2R), rx=ax+bx, ry=ay+by;
+    const P=(x,y)=>[ox+x*S, oy-y*S];
+    const [x1,y1]=P(ax,ay),[x2,y2]=P(rx,ry);
+    svg.innerHTML=`<line x1="0" y1="${oy}" x2="420" y2="${oy}" style="stroke:${LINE}"/><line x1="${ox}" y1="0" x2="${ox}" y2="300" style="stroke:${LINE}"/>`+
+      svgArrow(ox,oy,x2,y2,GREEN,5)+svgArrow(ox,oy,x1,y1,BLUE,4)+svgArrow(x1,y1,x2,y2,ORANGE,4)+
+      T((ox+x1)/2-10,(oy+y1)/2-8,"A",BLUE,18,"middle",true)+T((x1+x2)/2+12,(y1+y2)/2-6,"B",ORANGE,18,"middle",true)+T((ox+x2)/2+14,(oy+y2)/2+20,"R",GREEN,18,"middle",true);
+    r.rx.textContent=fmt(rx); r.ry.textContent=fmt(ry); r.r.textContent=fmt(Math.hypot(rx,ry)); let t=Math.atan2(ry,rx)/D2R; if(t<0)t+=360; r.t.textContent=fmt(t,1)+"°"; }
+};
+
+W.comp=el=>{
+  const svg=h(`<svg class="fig" viewBox="0 0 420 320" aria-label="Komponen vektor"></svg>`); el.appendChild(svg);
+  const r=readout(el,[["ax","A<sub>x</sub> = A cos θ"],["ay","A<sub>y</sub> = A sin θ"],["q","Sukuan"],["ref","Sudut rujukan"]]);
+  const note=h(`<div class="verdict mid"></div>`); el.appendChild(note);
+  const m=slider(el,"|A|",1,10,0.5,8,"m",d), th=slider(el,"θ",0,359,1,150,"°",d);
+  function d(){ const S=14, ox=210, oy=160, A=m(), t=th(); const ax=A*Math.cos(t*D2R), ay=A*Math.sin(t*D2R); const ex=ox+ax*S, ey=oy-ay*S;
+    const q=t<90?1:t<180?2:t<270?3:4; const ref=q===1?t:q===2?180-t:q===3?t-180:360-t;
+    const qbg=[[ox,0],[0,0],[0,oy],[ox,oy]][q-1];
+    svg.innerHTML=`<rect x="${qbg[0]}" y="${qbg[1]}" width="210" height="160" style="fill:${BLUE};opacity:.07"/>`+
+      `<line x1="0" y1="${oy}" x2="420" y2="${oy}" style="stroke:${MUTED}"/><line x1="${ox}" y1="0" x2="${ox}" y2="320" style="stroke:${MUTED}"/>`+
+      T(405,oy-8,"+x",MUTED,14)+T(ox+16,16,"+y",MUTED,14)+T(320,40,"I",MUTED,22)+T(100,40,"II",MUTED,22)+T(100,290,"III",MUTED,22)+T(320,290,"IV",MUTED,22)+
+      `<line x1="${ox}" y1="${oy}" x2="${ex}" y2="${oy}" style="stroke:${ORANGE};stroke-width:5"/><line x1="${ex}" y1="${oy}" x2="${ex}" y2="${ey}" style="stroke:${GREEN};stroke-width:5;stroke-dasharray:7 5"/>`+
+      `<path d="M${ox+30} ${oy} A30 30 0 ${t>180?1:0} 0 ${ox+30*Math.cos(t*D2R)} ${oy-30*Math.sin(t*D2R)}" style="fill:none;stroke:${PURPLE};stroke-width:2"/>`+
+      svgArrow(ox,oy,ex,ey,BLUE,5)+T((ox+ex)/2,oy+(ay>=0?22:-10),"Aₓ",ORANGE,16)+T(ex+(ax>=0?22:-22),(oy+ey)/2,"Aᵧ",GREEN,16)+T(ox+44*Math.cos(t/2*D2R),oy-44*Math.sin(t/2*D2R)+5,"θ",PURPLE,16,"middle",true);
+    r.ax.innerHTML=`<span style="color:${ax<-1e-9?RED:GREEN}">${fmt(ax)}</span>`; r.ay.innerHTML=`<span style="color:${ay<-1e-9?RED:GREEN}">${fmt(ay)}</span>`; r.q.textContent=["I (+,+)","II (−,+)","III (−,−)","IV (+,−)"][q-1]; r.ref.textContent=fmt(ref,0)+"°";
+    note.textContent=["Sukuan I: θ = sudut rujukan","Sukuan II: θ = 180° − sudut rujukan","Sukuan III: θ = 180° + sudut rujukan","Sukuan IV: θ = 360° − sudut rujukan"][q-1]; }
+};
+
+function vecInputs(el,defA,defB,cb){
+  const g=h(`<div style="display:grid;grid-template-columns:auto repeat(3,1fr);gap:6px;align-items:center"></div>`);
+  const ins={};
+  ["A","B"].forEach((v,j)=>{ g.appendChild(h(`<b>${v}⃗</b>`)); ["x","y","z"].forEach((c,i)=>{ const inp=h(`<input type="number" step="any" value="${(j?defB:defA)[i]}" aria-label="${v}${c}">`); ins[v+c]=inp; inp.addEventListener("input",cb); const wrap=h(`<label style="display:flex;align-items:center;gap:4px;font-size:14px">${c}<span></span></label>`); wrap.replaceChild(inp,$("span",wrap)); g.appendChild(wrap); }); });
+  el.appendChild(g); return k=>parseFloat(ins[k].value)||0;
+}
+W.dot=el=>{
+  const work=h(`<div class="work"></div>`);
+  const g=vecInputs(el,[2,3,1],[-4,2,-1],upd); el.appendChild(work);
+  function upd(){ const A=[g("Ax"),g("Ay"),g("Az")], B=[g("Bx"),g("By"),g("Bz")]; const d=A[0]*B[0]+A[1]*B[1]+A[2]*B[2], a=Math.hypot(...A), b=Math.hypot(...B), c=d/(a*b), p=Math.acos(Math.max(-1,Math.min(1,c)))/D2R;
+    work.innerHTML=`A⃗·B⃗ = (${A[0]})(${B[0]}) + (${A[1]})(${B[1]}) + (${A[2]})(${B[2]}) = <b>${fmt(d)}</b><br>A = ${fmt(a,3)}, B = ${fmt(b,3)}<br>cos φ = ${fmt(d)} / (${fmt(a,3)} × ${fmt(b,3)}) = ${fmt(c,3)}<br><b>φ = ${fmt(p,1)}°</b>`; }
+  upd(); el.appendChild(h(`<p class="kv">Nilai asal = contoh nota (jawapan φ = 100°)</p>`));
+};
+W.cross=el=>{
+  const work=h(`<div class="work"></div>`);
+  const g=vecInputs(el,[6,0,0],[3.464,2,0],upd); el.appendChild(work);
+  function upd(){ const [ax,ay,az]=[g("Ax"),g("Ay"),g("Az")], [bx,by,bz]=[g("Bx"),g("By"),g("Bz")];
+    const cx=ay*bz-az*by, cy=az*bx-ax*bz, cz=ax*by-ay*bx;
+    work.innerHTML=`Cₓ = (${ay})(${bz}) − (${az})(${by}) = <b>${fmt(cx)}</b><br>Cᵧ = (${az})(${bx}) − (${ax})(${bz}) = <b>${fmt(cy)}</b><br>C_z = (${ax})(${by}) − (${ay})(${bx}) = <b>${fmt(cz)}</b><br>C⃗ = ${fmt(cx)}î + ${fmt(cy)}ĵ + ${fmt(cz)}k̂, |C| = ${fmt(Math.hypot(cx,cy,cz))}`; }
+  upd(); el.appendChild(h(`<p class="kv">Nilai asal = contoh nota: A = 6 pada +x, B = 4 pada 30° (Bₓ = 2√3). Jawapan C⃗ = 12k̂</p>`));
+};
+
+/* ----- Bab 2 ----- */
+W.dog=el=>{
+  const moves=[2.54,-5.67,1.33];
+  const svg=h(`<svg class="fig" viewBox="0 0 440 200" aria-label="Garis nombor anjing"></svg>`); el.appendChild(svg);
+  const r=readout(el,[["d","Jarak (distance)"],["s","Sesaran (displacement)"]]);
+  const row=h(`<div class="btnrow"><button class="btn" type="button">Gerak seterusnya</button><button class="btn ghost" type="button">Ulang</button></div>`); el.appendChild(row);
+  let n=0; const X=x=>220+x*45;
+  function draw(){ let s=`<line x1="20" y1="170" x2="420" y2="170" style="stroke:${MUTED};stroke-width:2"/>`;
+    for(let i=-4;i<=4;i++) s+=`<line x1="${X(i)}" y1="164" x2="${X(i)}" y2="176" style="stroke:${MUTED}"/>`+T(X(i),194,(i>0?"+":"")+i,MUTED,13);
+    s+=T(X(0),156,"mula",INK,13); let pos=0,dist=0;
+    for(let i=0;i<n;i++){ const y=40+i*38, np=pos+moves[i]; s+=svgArrow(X(pos),y,X(np),y,moves[i]>0?BLUE:ORANGE,4)+T((X(pos)+X(np))/2,y-8,(moves[i]>0?"+":"−")+Math.abs(moves[i])+" m",moves[i]>0?BLUE:ORANGE,14); dist+=Math.abs(moves[i]); pos=np; }
+    if(n===3) s+=svgArrow(X(0),150,X(pos),150,GREEN,5)+T(X(pos/2),142,"Δx = −1.80 m",GREEN,14);
+    s+=`<circle cx="${X(pos)}" cy="170" r="9" style="fill:${INK}"/>`;
+    svg.innerHTML=s; r.d.textContent=fmt(dist)+" m"; r.s.textContent=fmt(pos)+" m"; $(".btn",row).disabled=n>=3; }
+  $(".btn",row).onclick=()=>{ if(n<3){n++;draw();} }; $(".ghost",row).onclick=()=>{n=0;draw();}; draw();
+};
+
+W.tangent=el=>{
+  const svg=h(`<svg class="fig" viewBox="0 0 440 280" aria-label="Graf x-t dengan tangen"></svg>`); el.appendChild(svg);
+  const r=readout(el,[["s","s(t)"],["v","v = 6t² + 4"]]);
+  const t=slider(el,"t",0.5,5,0.1,4,"s",d);
+  function d(){ const X=x=>50+x*76, Y=y=>250-y*0.85, f=x=>2*x**3+4*x-1;
+    let p=""; for(let x=0;x<=5.001;x+=0.05) p+=(p?"L":"M")+X(x)+" "+Y(f(x));
+    const t0=t(), s0=f(t0), v=6*t0*t0+4; const x1=t0-1.2,x2=t0+1.2;
+    let ax=`<line x1="50" y1="250" x2="430" y2="250" style="stroke:${MUTED}"/><line x1="50" y1="10" x2="50" y2="250" style="stroke:${MUTED}"/>`;
+    for(let i=1;i<=5;i++) ax+=T(X(i),268,i,MUTED,12); ax+=T(425,244,"t (s)",MUTED,12,"end")+T(56,20,"x (m)",MUTED,12,"start");
+    [100,200].forEach(y=>ax+=`<line x1="50" y1="${Y(y)}" x2="430" y2="${Y(y)}" style="stroke:${LINE};stroke-dasharray:3 4"/>`+T(44,Y(y)+4,y,MUTED,12,"end"));
+    let s=`<path d="${p}" style="fill:none;stroke:${ORANGE};stroke-width:3"/>`;
+    s+=`<line x1="${X(x1)}" y1="${Y(s0+v*(x1-t0))}" x2="${X(x2)}" y2="${Y(s0+v*(x2-t0))}" style="stroke:${BLUE};stroke-width:3"/>`;
+    s+=`<circle cx="${X(t0)}" cy="${Y(s0)}" r="6" style="fill:${BLUE}"/>`;
+    svg.innerHTML=ax+`<defs><clipPath id="cp1"><rect x="50" y="0" width="390" height="250"/></clipPath></defs><g clip-path="url(#cp1)">${s}</g>`+T(Math.min(X(t0)-12,300),Math.max(18,Y(s0)-14),"kecerunan = "+fmt(v,1)+" m/s",BLUE,14,"end");
+    r.s.textContent=fmt(s0,1)+" m"; r.v.textContent=fmt(v,1)+" m/s"; }
+};
+
+W.signs=el=>{
+  let v="+",a="+";
+  const row=h(`<div class="row"></div>`); el.appendChild(row);
+  row.appendChild(h(`<span>Halaju v:</span>`)); seg(row,[["+","+ (kanan)"],["-","− (kiri)"]],"+",k=>{v=k;d();});
+  const row2=h(`<div class="row"></div>`); el.appendChild(row2);
+  row2.appendChild(h(`<span>Pecutan a:</span>`)); seg(row2,[["+","+ (kanan)"],["-","− (kiri)"]],"+",k=>{a=k;d();});
+  const svg=h(`<svg class="fig" viewBox="0 0 420 120" aria-label="Arah halaju dan pecutan"></svg>`); el.appendChild(svg);
+  const vd=h(`<div class="verdict"></div>`); el.appendChild(vd);
+  function d(){ const vs=v==="+"?1:-1, as=a==="+"?1:-1;
+    svg.innerHTML=`<rect x="175" y="58" width="70" height="34" rx="8" style="fill:${INK}"/><circle cx="192" cy="96" r="9" style="fill:${MUTED}"/><circle cx="228" cy="96" r="9" style="fill:${MUTED}"/>`+
+      svgArrow(210,40,210+vs*120,40,BLUE,5)+T(210+vs*130,45,"v",BLUE,18,vs>0?"start":"end",true)+svgArrow(210,22,210+as*70,22,ORANGE,4)+T(210+as*80,27,"a",ORANGE,18,as>0?"start":"end",true);
+    const same=v===a; vd.className="verdict "+(same?"ok":"no");
+    vd.textContent=same?"Tanda sama → LAJU BERTAMBAH (speeding up)":"Tanda berbeza → LAJU BERKURANG (slowing down)"; }
+  d();
+};
+
+W.solar=el=>{
+  const svg=h(`<svg class="fig" viewBox="0 0 440 250" aria-label="Graf v-t kereta solar"></svg>`); el.appendChild(svg);
+  const r=readout(el,[["dv","Δv"],["dt","Δt"],["a","a = Δv/Δt"]]);
+  const pts=[[0,0],[10,60],[30,60],[40,0]], X=t=>50+t*9.3, Y=v=>215-v*3;
+  const segs={"0-10":[0,1],"10-30":[1,2],"30-40":[2,3],"0-40":[0,3]};
+  const row=h(`<div class="row"></div>`); el.appendChild(row);
+  seg(row,Object.keys(segs).map(k=>[k,k.replace("-","–")+" s"]),"0-10",k=>d(k));
+  function d(k){ const [i,j]=segs[k]; let s=`<line x1="50" y1="215" x2="430" y2="215" style="stroke:${MUTED}"/><line x1="50" y1="20" x2="50" y2="215" style="stroke:${MUTED}"/>`;
+    [0,10,20,30,40].forEach(t=>s+=T(X(t),234,t,MUTED,12)); [20,40,60].forEach(v=>s+=T(44,Y(v)+4,v,MUTED,12,"end")+`<line x1="50" y1="${Y(v)}" x2="430" y2="${Y(v)}" style="stroke:${LINE};stroke-dasharray:3 4"/>`);
+    s+=T(430,208,"t (s)",MUTED,12,"end")+T(56,28,"v (km/h)",MUTED,12,"start");
+    s+=`<polyline points="${pts.map(p=>X(p[0])+","+Y(p[1])).join(" ")}" style="fill:none;stroke:${MUTED};stroke-width:3"/>`;
+    if(k==="0-40") s+=`<line x1="${X(0)}" y1="${Y(0)}" x2="${X(40)}" y2="${Y(0)}" style="stroke:${ORANGE};stroke-width:6"/>`;
+    else s+=`<line x1="${X(pts[i][0])}" y1="${Y(pts[i][1])}" x2="${X(pts[j][0])}" y2="${Y(pts[j][1])}" style="stroke:${ORANGE};stroke-width:6;stroke-linecap:round"/>`;
+    svg.innerHTML=s; const dv=(pts[j][1]-pts[i][1])/3.6, dt=pts[j][0]-pts[i][0];
+    r.dv.textContent=fmt(dv,1)+" m/s"; r.dt.textContent=dt+" s"; r.a.textContent=fmt(dv/dt,2)+" m/s²"; }
+  d("0-10");
+};
+
+W.picker=el=>{
+  const V=[["v0","v₀"],["v","v"],["a","a"],["t","t"],["x","Δx"]];
+  const EQ={x:"v = v₀ + at",v:"Δx = v₀t + ½at²",t:"v² = v₀² + 2aΔx",a:"Δx = ½(v₀ + v)t",v0:"Δx = vt − ½at²  (versi tanpa v₀)"};
+  const st={v0:"g",v:"g",a:"f",t:"n",x:"g"};
+  const g=h(`<div style="display:grid;gap:8px"></div>`); el.appendChild(g);
+  V.forEach(([k,l])=>{ const r=h(`<div class="row"><b class="m" style="min-width:40px">${l}</b></div>`); seg(r,[["g","Diberi"],["f","Dicari"],["n","Tiada"]],st[k],s=>{st[k]=s;d();}); g.appendChild(r); });
+  const out=h(`<div class="verdict"></div>`); el.appendChild(out);
+  function d(){ const n=Object.keys(st).filter(k=>st[k]==="n"), f=Object.keys(st).filter(k=>st[k]==="f");
+    if(f.length!==1){ out.className="verdict mid"; out.textContent="Pilih tepat SATU pemboleh ubah sebagai 'Dicari'."; return; }
+    if(n.length>1){ out.className="verdict no"; out.textContent="Terlalu sedikit maklumat: perlu sekurang-kurangnya 3 yang diberi."; return; }
+    if(n.length===0){ out.className="verdict ok"; out.textContent="Semua ada. Pilih mana-mana persamaan yang ada '"+V.find(x=>x[0]===f[0])[1]+"', contohnya "+(f[0]==="x"?EQ.t:EQ.x); return; }
+    out.className="verdict ok"; out.innerHTML="Guna: <span class='m'>"+EQ[n[0]]+"</span> (tiada "+V.find(x=>x[0]===n[0])[1]+")"; }
+  d(); el.appendChild(h(`<p class="kv">Asal: contoh kereta berhenti (Δx, v₀, v diberi; a dicari; t tiada)</p>`));
+};
+
+W.freefall=el=>{
+  const c=h(`<canvas class="fig" aria-label="Animasi bola dibaling ke atas"></canvas>`); el.appendChild(c);
+  const r=readout(el,[["tt","Masa ke puncak v₀/g"],["H","Tinggi maks v₀²/2g"],["T","Jumlah masa 2v₀/g"],["now","Sekarang"]]);
+  const v0=slider(el,"v₀ (ke atas)",2,25,0.5,8.2,"m/s",()=>{ if(!run) draw(0); stat(); });
+  const row=h(`<div class="btnrow"><button class="btn" type="button">Baling ↑</button></div>`); el.appendChild(row);
+  let run=false; const W0=420,H0=300; const ctx=canvasFit(c,W0,H0);
+  function stat(){ const v=v0(); r.tt.textContent=fmt(v/G,2)+" s"; r.H.textContent=fmt(v*v/2/G,2)+" m"; r.T.textContent=fmt(2*v/G,2)+" s"; }
+  function draw(t){ const v=v0(), Hm=Math.max(v*v/2/G,1), sc=230/32; const y=v*t-0.5*G*t*t, vy=v-G*t;
+    ctx.clearRect(0,0,W0,H0); ctx.fillStyle="#E8EEF5"; ctx.fillRect(0,0,W0,H0);
+    ctx.strokeStyle=LINE; ctx.fillStyle=MUTED; ctx.font="12px Lexend, sans-serif";
+    for(let m=0;m<=32;m+=4){ const yy=270-m*sc; ctx.beginPath(); ctx.moveTo(40,yy); ctx.lineTo(W0,yy); ctx.stroke(); ctx.fillText(m+" m",4,yy+4); }
+    const top=270-Hm*sc; ctx.setLineDash([6,5]); ctx.strokeStyle=ORANGE; ctx.beginPath(); ctx.moveTo(40,top); ctx.lineTo(W0,top); ctx.stroke(); ctx.setLineDash([]); ctx.fillStyle=ORANGE; ctx.fillText("H = "+fmt(Hm,2)+" m",300,top-6);
+    const by=270-Math.max(0,y)*sc; ctx.fillStyle=TEAL; ctx.beginPath(); ctx.arc(200,by,12,0,7); ctx.fill();
+    if(Math.abs(vy)>0.3){ const L=Math.min(60,Math.abs(vy)*4), s=vy>0?-1:1; ctx.strokeStyle=BLUE; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(230,by); ctx.lineTo(230,by+s*L); ctx.stroke(); ctx.beginPath(); ctx.moveTo(230,by+s*L); ctx.lineTo(224,by+s*(L-10)); ctx.lineTo(236,by+s*(L-10)); ctx.fillStyle=BLUE; ctx.fill(); ctx.lineWidth=1; ctx.fillText("v",242,by+s*L/2); }
+    ctx.strokeStyle=RED; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(170,by); ctx.lineTo(170,by+36); ctx.stroke(); ctx.fillStyle=RED; ctx.beginPath(); ctx.moveTo(170,by+40); ctx.lineTo(164,by+30); ctx.lineTo(176,by+30); ctx.fill(); ctx.fillText("g",150,by+30); ctx.lineWidth=1;
+    ctx.fillStyle=INK; ctx.fillRect(160,272,80,6);
+    r.now.textContent=`t=${fmt(t,2)} s, v=${fmt(vy,1)} m/s`; }
+  $(".btn",row).onclick=()=>{ if(run) return; run=true; const v=v0(), Tt=2*v/G; const t0=performance.now();
+    (function f(now){ const t=Math.min(Tt,(now-t0)/1000); draw(t); if(t<Tt&&isOn(el)) requestAnimationFrame(f); else { run=false; draw(Tt); } })(t0); };
+  stat(); draw(0);
+};
+
+W.proj=el=>{
+  const c=h(`<canvas class="fig" aria-label="Simulator projektil"></canvas>`); el.appendChild(c);
+  const r=readout(el,[["vx","v₀ₓ = v₀ cos θ"],["vy","v₀ᵧ = v₀ sin θ"],["T","Masa T"],["H","Tinggi maks H"],["R","Julat R"]]);
+  const v0=slider(el,"v₀",5,40,1,25,"m/s",upd), th=slider(el,"θ",5,85,1,45,"°",upd);
+  const row=h(`<div class="btnrow"><button class="btn" type="button">Lancar 🚀</button><button class="btn ghost" type="button">Padam jejak</button></div>`); el.appendChild(row);
+  const W0=440,H0=260, ctx=canvasFit(c,W0,H0); let trails=[], anim=null; const sx=400/170, sy=sx;
+  const P=(x,y)=>[30+x*sx, 230-y*sy];
+  function base(){ ctx.clearRect(0,0,W0,H0); ctx.fillStyle="#E8EEF5"; ctx.fillRect(0,0,W0,H0); ctx.strokeStyle=LINE; ctx.fillStyle=MUTED; ctx.font="12px Lexend, sans-serif";
+    for(let m=0;m<=160;m+=20){ const [x]=P(m,0); ctx.beginPath(); ctx.moveTo(x,230); ctx.lineTo(x,236); ctx.stroke(); ctx.fillText(m,x-8,250); }
+    for(let m=20;m<=80;m+=20){ const [,y]=P(0,m); ctx.beginPath(); ctx.moveTo(30,y); ctx.lineTo(W0,y); ctx.stroke(); ctx.fillText(m,4,y+4); }
+    ctx.fillStyle=INK; ctx.fillRect(30,230,W0-30,3);
+    const cols=[MUTED,"#9AA9BC","#B8C4D2"]; trails.forEach((tr,i)=>{ ctx.strokeStyle=cols[Math.min(i,2)]; ctx.lineWidth=2; ctx.beginPath(); tr.pts.forEach((p,j)=>j?ctx.lineTo(...p):ctx.moveTo(...p)); ctx.stroke(); ctx.fillStyle=cols[Math.min(i,2)]; const e=tr.pts[tr.pts.length-1]; ctx.fillText(tr.lab,e[0]-20,e[1]-8); }); ctx.lineWidth=1; }
+  function path(v,t){ const vx=v*Math.cos(t*D2R), vy=v*Math.sin(t*D2R), Tt=2*vy/G, pts=[]; for(let i=0;i<=60;i++){ const tt=Tt*i/60; pts.push(P(vx*tt,vy*tt-0.5*G*tt*tt)); } return {vx,vy,Tt,pts}; }
+  function preview(){ base(); const p=path(v0(),th()); ctx.setLineDash([5,5]); ctx.strokeStyle=ORANGE; ctx.lineWidth=2; ctx.beginPath(); p.pts.forEach((q,j)=>j?ctx.lineTo(...q):ctx.moveTo(...q)); ctx.stroke(); ctx.setLineDash([]); ctx.lineWidth=1;
+    const [x0,y0]=P(0,0); ctx.strokeStyle=BLUE; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x0+40*Math.cos(th()*D2R),y0-40*Math.sin(th()*D2R)); ctx.stroke(); ctx.lineWidth=1; }
+  function upd(){ const v=v0(), t=th(), vx=v*Math.cos(t*D2R), vy=v*Math.sin(t*D2R); r.vx.textContent=fmt(vx,1)+" m/s"; r.vy.textContent=fmt(vy,1)+" m/s"; r.T.textContent=fmt(2*vy/G,2)+" s"; r.H.textContent=fmt(vy*vy/2/G,1)+" m"; r.R.textContent=fmt(v*v*Math.sin(2*t*D2R)/G,1)+" m"; if(!anim) preview(); }
+  $(".btn",row).onclick=()=>{ if(anim) return; const v=v0(), t=th(), p=path(v,t); const t0=performance.now(), dur=Math.max(1.2,p.Tt*0.6);
+    anim=true; (function f(now){ const k=Math.min(1,(now-t0)/1000/dur), tt=p.Tt*k; base(); ctx.strokeStyle=ORANGE; ctx.lineWidth=3; ctx.beginPath(); const n=Math.round(k*60); for(let j=0;j<=n;j++) j?ctx.lineTo(...p.pts[j]):ctx.moveTo(...p.pts[j]); ctx.stroke(); ctx.lineWidth=1;
+      const [bx,by]=P(p.vx*tt,p.vy*tt-0.5*G*tt*tt); ctx.fillStyle=ORANGE; ctx.beginPath(); ctx.arc(bx,by,7,0,7); ctx.fill();
+      if(k<1&&isOn(el)) requestAnimationFrame(f); else { trails.unshift({pts:p.pts,lab:t+"°"}); trails=trails.slice(0,3); anim=null; base(); } })(t0); };
+  $(".ghost",row).onclick=()=>{ trails=[]; preview(); };
+  upd();
+};
+
+W.circle=el=>{
+  const c=h(`<canvas class="fig" aria-label="Animasi gerakan bulat"></canvas>`); el.appendChild(c);
+  const r=readout(el,[["v","v = ωr"],["T","T = 2π/ω"],["a","a<sub>rad</sub> = v²/r"]]);
+  const w=slider(el,"ω",0.5,3,0.01,1.97,"rad/s",upd), rr=slider(el,"r",0.5,3,0.05,1.75,"m",upd);
+  const W0=420,H0=280, ctx=canvasFit(c,W0,H0); let ang=0, last=null, running=false;
+  function upd(){ const v=w()*rr(); r.v.textContent=fmt(v,2)+" m/s"; r.T.textContent=fmt(2*Math.PI/w(),2)+" s"; r.a.textContent=fmt(v*v/rr(),2)+" m/s²"; draw(); }
+  function draw(){ const R=rr()*38, cx=210, cy=140; ctx.clearRect(0,0,W0,H0); ctx.fillStyle="#E8EEF5"; ctx.fillRect(0,0,W0,H0);
+    ctx.setLineDash([5,5]); ctx.strokeStyle=MUTED; ctx.beginPath(); ctx.arc(cx,cy,R,0,7); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle=INK; ctx.beginPath(); ctx.arc(cx,cy,4,0,7); ctx.fill();
+    const px=cx+R*Math.cos(ang), py=cy-R*Math.sin(ang);
+    const arrow=(x1,y1,x2,y2,col,lab)=>{ ctx.strokeStyle=col; ctx.fillStyle=col; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke(); const a=Math.atan2(y2-y1,x2-x1); ctx.beginPath(); ctx.moveTo(x2,y2); ctx.lineTo(x2-11*Math.cos(a-0.45),y2-11*Math.sin(a-0.45)); ctx.lineTo(x2-11*Math.cos(a+0.45),y2-11*Math.sin(a+0.45)); ctx.fill(); ctx.lineWidth=1; ctx.font="italic 16px serif"; ctx.fillText(lab,x2+6,y2-6); };
+    const vl=20+w()*rr()*8; arrow(px,py,px-vl*Math.sin(ang),py-vl*Math.cos(ang),BLUE,"v");
+    const al=Math.min(R-6,14+w()*w()*rr()*4); arrow(px,py,px-al*Math.cos(ang),py+al*Math.sin(ang),ORANGE,"a");
+    ctx.fillStyle=TEAL; ctx.beginPath(); ctx.arc(px,py,10,0,7); ctx.fill(); }
+  function loop(now){ if(!isOn(el)){ running=false; last=null; return; } if(last!==null) ang+=w()*(now-last)/1000; last=now; draw(); requestAnimationFrame(loop); }
+  el.closest(".slide").addEventListener("shown",()=>{ if(!running){ running=true; requestAnimationFrame(loop); } });
+  upd(); el.appendChild(h(`<p class="kv">Contoh nota: ω = 1.97 rad/s, r = 1.75 m → v = 3.45 m/s, a<sub>c</sub> ≈ 6.80 m/s²</p>`));
+};
+
+W.relvel=el=>{
+  const svg=h(`<svg class="fig" viewBox="0 0 420 300" aria-label="Segi tiga halaju relatif"></svg>`); el.appendChild(svg);
+  const r=readout(el,[["v","|v<sub>P/E</sub>|"],["a","Arah"]]);
+  const p=slider(el,"Kapal terbang (utara)",100,400,10,240,"km/h",d), w=slider(el,"Angin (timur)",0,200,10,100,"km/h",d);
+  function d(){ const S=0.62, ox=90, oy=280; const ex=ox+w()*S, ey=oy-p()*S;
+    svg.innerHTML=svgArrow(ox,oy,ox,ey,BLUE,5)+svgArrow(ox,ey,ex,ey,ORANGE,5)+svgArrow(ox,oy,ex,ey,GREEN,5)+
+      T(ox-8,(oy+ey)/2,"v_P/A",BLUE,14,"end")+T((ox+ex)/2,ey-10,"v_A/E (angin)",ORANGE,14)+T((ox+ex)/2+14,(oy+ey)/2+10,"v_P/E",GREEN,14,"start")+T(370,40,"U ↑",MUTED,14)+T(370,60,"T →",MUTED,14);
+    r.v.textContent=fmt(Math.hypot(p(),w()),0)+" km/h"; r.a.textContent=fmt(Math.atan2(w(),p())/D2R,1)+"° T dari U"; }
+};
+
+/* ----- Bab 3 ----- */
+function boxScene(svg,{left=0,right=0,friction=0,N=false,W=false,label="",shift=0}){
+  const bx=170+shift, by=110; let s=`<line x1="10" y1="160" x2="410" y2="160" style="stroke:${INK};stroke-width:3"/><rect x="${bx}" y="${by}" width="80" height="50" rx="6" style="fill:#F4C99B;stroke:${INK}"/>`+T(bx+40,by+31,label,INK,14);
+  const sc=1.3; if(right) s+=svgArrow(bx+80,by+20,bx+80+Math.min(140,right*sc),by+20,BLUE,5)+T(bx+86+Math.min(140,right*sc)/2,by+8,fmt(right,0)+" N",BLUE,13);
+  if(left) s+=svgArrow(bx,by+20,bx-Math.min(140,left*sc),by+20,ORANGE,5)+T(bx-Math.min(140,left*sc)/2,by+8,fmt(left,0)+" N",ORANGE,13);
+  if(friction) s+=svgArrow(bx+40,by+52,bx+40-Math.min(120,friction*sc),by+52,RED,4)+T(bx+40-Math.min(120,friction*sc)/2,by+72,"f = "+fmt(friction,1)+" N",RED,13);
+  svg.innerHTML=s; }
+W.tug=el=>{
+  const svg=h(`<svg class="fig" viewBox="0 0 420 180" aria-label="Dua daya pada kotak"></svg>`); el.appendChild(svg);
+  const vd=h(`<div class="verdict"></div>`); el.appendChild(vd);
+  const L=slider(el,"Daya kiri",0,100,5,40,"N",d), R=slider(el,"Daya kanan",0,100,5,60,"N",d);
+  function d(){ boxScene(svg,{left:L(),right:R(),label:"kotak"}); const n=R()-L(); vd.className="verdict "+(n===0?"ok":"mid");
+    vd.textContent=n===0?"ΣF = 0 N → seimbang: kekal pegun atau halaju malar (Hukum 1)":`ΣF = ${Math.abs(n)} N ke ${n>0?"kanan":"kiri"} → kotak MEMECUT ke ${n>0?"kanan":"kiri"} (Hukum 2)`; }
+};
+W.weight=el=>{
+  const PL=[["Bumi",9.81],["Bulan",1.62],["Marikh",3.71],["Musytari",24.79]];
+  const svg=h(`<svg class="fig" viewBox="0 0 420 200" aria-label="Berat di planet berbeza"></svg>`); el.appendChild(svg);
+  const m=slider(el,"Jisim anda",30,120,1,60,"kg",d);
+  function d(){ let s=""; PL.forEach(([n,g],i)=>{ const W=m()*g, x=20+i*100, hh=Math.min(130,W/24); s+=`<rect x="${x+20}" y="${160-hh}" width="60" height="${hh}" rx="6" style="fill:${[TEAL,MUTED,ORANGE,PURPLE][i]}"/>`+T(x+50,152-hh,fmt(W,0)+" N",INK,14)+T(x+50,180,n,INK,14)+T(x+50,196,"g = "+g,MUTED,11); });
+    svg.innerHTML=s+T(410,18,"jisim = "+m()+" kg di semua tempat",MUTED,13,"end"); }
+  el.appendChild(h(`<p class="kv">Jisim sama di mana-mana. Yang berubah ialah berat, W = mg.</p>`));
+};
+W.fma=el=>{
+  const c=h(`<canvas class="fig" aria-label="Kotak ditolak"></canvas>`); el.appendChild(c);
+  const r=readout(el,[["a","a = F/m"],["d","Jarak dalam 2 s"]]);
+  const F=slider(el,"Daya F",0,100,5,40,"N",upd), M=slider(el,"Jisim m",1,50,1,10,"kg",upd);
+  const row=h(`<div class="btnrow"><button class="btn" type="button">Tolak 2 saat</button></div>`); el.appendChild(row);
+  const W0=420,H0=150, ctx=canvasFit(c,W0,H0); let busy=false;
+  function draw(x){ ctx.clearRect(0,0,W0,H0); ctx.fillStyle="#E8EEF5"; ctx.fillRect(0,0,W0,H0); ctx.fillStyle=INK; ctx.fillRect(0,120,W0,3);
+    const s=18+M()*1.1; ctx.fillStyle="#F4C99B"; ctx.strokeStyle=INK; ctx.fillRect(20+x,120-s,s,s); ctx.strokeRect(20+x,120-s,s,s);
+    if(F()>0){ ctx.strokeStyle=BLUE; ctx.lineWidth=5; ctx.beginPath(); ctx.moveTo(20+x+s,120-s/2); ctx.lineTo(20+x+s+F()*0.8,120-s/2); ctx.stroke(); ctx.lineWidth=1; ctx.fillStyle=BLUE; ctx.font="14px Lexend"; ctx.fillText("F",24+x+s+F()*0.8,120-s/2+5); } }
+  function upd(){ const a=F()/M(); r.a.textContent=fmt(a,2)+" m/s²"; r.d.textContent=fmt(0.5*a*4,2)+" m"; if(!busy) draw(0); }
+  $(".btn",row).onclick=()=>{ if(busy) return; busy=true; const a=F()/M(), t0=performance.now(), k=Math.min(18, 300/Math.max(0.01,0.5*a*4));
+    (function f(now){ const t=Math.min(2,(now-t0)/1000); draw(Math.min(300,0.5*a*t*t*k)); if(t<2&&isOn(el)) requestAnimationFrame(f); else busy=false; })(t0); };
+  upd(); el.appendChild(h(`<p class="kv">Daya 2× → pecutan 2×. Jisim 2× → pecutan ½×.</p>`));
+};
+W.elevator=el=>{
+  let mode="up"; const m=625/9.80;
+  const row=h(`<div class="row"></div>`); el.appendChild(row);
+  seg(row,[["rest","Pegun / laju malar"],["up","Pecut ke atas"],["down","Pecut ke bawah"],["free","Jatuh bebas"]],"up",k=>{mode=k;d();});
+  const svg=h(`<svg class="fig" viewBox="0 0 420 240" aria-label="Lif dan penimbang"></svg>`); el.appendChild(svg);
+  const r=readout(el,[["N","Bacaan penimbang N"],["eq","Persamaan"]]);
+  const a=slider(el,"|a|",0,5,0.1,2.5,"m/s²",d);
+  function d(){ const g=9.80, ay=mode==="up"?a():mode==="down"?-a():mode==="free"?-g:0; const N=Math.max(0,m*(g+ay));
+    svg.innerHTML=`<rect x="140" y="10" width="140" height="220" rx="8" style="fill:#fff;stroke:${INK};stroke-width:2"/><rect x="175" y="200" width="70" height="14" rx="3" style="fill:${MUTED}"/><circle cx="210" cy="95" r="16" style="fill:#F4C99B"/><rect x="196" y="112" width="28" height="70" rx="10" style="fill:${TEAL}"/>`+
+      svgArrow(210,190,210,190-N/7,BLUE,5)+T(232,190-N/14,"N",BLUE,18,"start",true)+svgArrow(196,140,196,140+625/9,RED,5)+T(176,150,"W",RED,18,"end",true)+
+      (ay?svgArrow(330,120,330,120-Math.sign(ay)*50,ORANGE,5)+T(345,120-Math.sign(ay)*25,"a",ORANGE,18,"start",true):"")+T(70,30,"W = 625 N",RED,14);
+    r.N.textContent=fmt(N,0)+" N"; r.eq.innerHTML=`N = m(g ${ay>=0?"+":"−"} ${fmt(Math.abs(ay),2)})`; }
+  el.appendChild(h(`<p class="kv">N &gt; 625 N: rasa lebih berat. N &lt; 625 N: rasa lebih ringan. Jatuh bebas: N = 0 (rasa tanpa berat).</p>`));
+};
+W.friction=el=>{
+  const m=20, g=9.80, ms=0.4, mk=0.2, N=m*g, fsm=ms*N, fk=mk*N;
+  const svg=h(`<svg class="fig" viewBox="0 0 420 180" aria-label="Kotak dan geseran"></svg>`); el.appendChild(svg);
+  const r=readout(el,[["N","N = mg"],["fs","f<sub>s,max</sub> = μ<sub>s</sub>N"],["fk","f<sub>k</sub> = μ<sub>k</sub>N"],["a","Pecutan"]]);
+  const vd=h(`<div class="verdict"></div>`); el.appendChild(vd);
+  const P=slider(el,"Tolakan P",0,120,1,50,"N",d);
+  r.N.textContent=fmt(N,0)+" N"; r.fs.textContent=fmt(fsm,1)+" N"; r.fk.textContent=fmt(fk,1)+" N";
+  function d(){ const p=P(); const moving=p>fsm; const f=moving?fk:p; boxScene(svg,{right:p,friction:f,label:"20 kg"});
+    r.a.textContent=moving?fmt((p-fk)/m,2)+" m/s²":"0";
+    vd.className="verdict "+(moving?"mid":"ok"); vd.textContent=moving?`P > ${fmt(fsm,1)} N → kotak MENGGELONGSOR. Geseran jadi kinetik (${fmt(fk,1)} N).`:`P ≤ ${fmt(fsm,1)} N → kotak kekal PEGUN. Geseran statik = P = ${p} N (sebanyak yang perlu).`; }
+};
+W.incline=el=>{
+  const S={rock:[0.65,0.45,"Batu atas bukit"],wood:[0.4,0.2,"Kayu atas kayu"],ice:[0.1,0.03,"Ais atas ais"]}; let k="rock";
+  const row=h(`<div class="row"></div>`); el.appendChild(row); seg(row,Object.entries(S).map(([a,b])=>[a,b[2]]),"rock",x=>{k=x;d();});
+  const svg=h(`<svg class="fig" viewBox="0 0 420 260" aria-label="Rajah jasad bebas di atas cerun"></svg>`); el.appendChild(svg);
+  const r=readout(el,[["par","mg sin θ (selari)"],["perp","N = mg cos θ"],["fs","f<sub>s,max</sub>"],["crit","Sudut kritikal"]]);
+  const vd=h(`<div class="verdict"></div>`); el.appendChild(vd);
+  const th=slider(el,"Sudut θ",0,60,1,36,"°",d);
+  function d(){ const m=10,g=9.80,[us,uk]=S[k],t=th()*D2R, mg=m*g, par=mg*Math.sin(t), N=mg*Math.cos(t), fsm=us*N, crit=Math.atan(us)/D2R;
+    const ox=40, oy=235, L=Math.min(360,200/Math.max(Math.tan(t),0.01)), tx=ox+L, ty=oy-L*Math.tan(t); const ang=Math.atan2(oy-ty,tx-ox);
+    const cxp=ox+0.55*(tx-ox), cyp=oy-0.55*(oy-ty); const nx=-Math.sin(ang), ny=-Math.cos(ang); const ux=Math.cos(ang), uy=-Math.sin(ang);
+    const bc=[cxp+nx*18, cyp+ny*18];
+    const box=`<g transform="translate(${bc[0]},${bc[1]}) rotate(${-ang/D2R})"><rect x="-26" y="-18" width="52" height="36" rx="5" style="fill:#F4C99B;stroke:${INK}"/></g>`;
+    const slides=par>fsm+1e-9;
+    let s=`<polygon points="${ox},${oy} ${tx},${oy} ${tx},${ty}" style="fill:#DCE5EF;stroke:${INK};stroke-width:2"/>`+box+
+      svgArrow(bc[0],bc[1],bc[0],bc[1]+70,RED,4)+T(bc[0]+8,bc[1]+86,"mg",RED,15,"start",true)+
+      svgArrow(bc[0],bc[1],bc[0]+nx*70*Math.cos(t),bc[1]+ny*70*Math.cos(t),BLUE,4)+T(bc[0]+nx*84,bc[1]+ny*84,"N",BLUE,15,"middle",true)+
+      svgArrow(bc[0],bc[1],bc[0]-ux*70*Math.sin(t),bc[1]-uy*70*Math.sin(t),ORANGE,3)+T(bc[0]-ux*80*Math.sin(t)-6,bc[1]-uy*80*Math.sin(t)+20,"mg sin θ",ORANGE,12,"end");
+    const fr=slides?uk*N:par; s+=svgArrow(bc[0]+nx*-14,bc[1]+ny*-14,bc[0]+nx*-14+ux*fr*1.2,bc[1]+ny*-14+uy*fr*1.2,GREEN,4)+T(bc[0]+ux*fr*1.2+16,bc[1]+uy*fr*1.2+20,"f",GREEN,15,"start",true);
+    s+=T(ox+46,oy-6,"θ",PURPLE,16,"middle",true);
+    svg.innerHTML=s;
+    r.par.textContent=fmt(par,1)+" N"; r.perp.textContent=fmt(N,1)+" N"; r.fs.textContent=fmt(fsm,1)+" N"; r.crit.textContent=fmt(crit,1)+"°";
+    vd.className="verdict "+(slides?"no":"ok");
+    vd.textContent=slides?`tan θ = ${fmt(Math.tan(t),3)} > μs = ${us} → MENGGELONGSOR. a = g(sin θ − μk cos θ) = ${fmt(g*(Math.sin(t)-uk*Math.cos(t)),2)} m/s² ke bawah cerun`:`tan θ = ${fmt(Math.tan(t),3)} ≤ μs = ${us} → kekal PEGUN (geseran statik = mg sin θ)`; }
+  el.appendChild(h(`<p class="kv">Jisim 10 kg. Hijau = geseran, sentiasa melawan arah gelongsor.</p>`));
+};
+W.pulley=el=>{
+  const svg=h(`<svg class="fig" viewBox="0 0 420 200" aria-label="Blok atas meja dengan blok tergantung"></svg>`); el.appendChild(svg);
+  const r=readout(el,[["a","Pecutan a"],["T","Tegangan T"],["v","v selepas 3.00 cm"]]);
+  const vd=h(`<div class="verdict"></div>`); el.appendChild(vd);
+  const mA=slider(el,"m<sub>A</sub> (atas meja)",0.5,5,0.05,2.25,"kg",d), mB=slider(el,"m<sub>B</sub> (tergantung)",0.2,5,0.05,1.3,"kg",d), mu=slider(el,"μ<sub>k</sub>",0,0.8,0.01,0.45,"",d);
+  function d(){ const g=9.80, A=mA(), B=mB(), u=mu(); const a=(B*g-u*A*g)/(A+B);
+    const sa=20+A*8, sb=20+B*8;
+    svg.innerHTML=`<rect x="20" y="80" width="300" height="12" style="fill:${MUTED}"/><rect x="40" y="${80-sa}" width="${sa+20}" height="${sa}" rx="4" style="fill:#F4C99B;stroke:${INK}"/>`+T(50+sa/2,80-sa/2+5,"A",INK,15)+
+      `<line x1="${60+sa}" y1="${80-sa/2}" x2="330" y2="${80-sa/2}" style="stroke:${INK};stroke-width:2"/><circle cx="335" cy="${80-sa/2+8}" r="10" style="fill:none;stroke:${INK};stroke-width:3"/><line x1="345" y1="${80-sa/2+8}" x2="345" y2="130" style="stroke:${INK};stroke-width:2"/>`+
+      `<rect x="${345-sb/2}" y="130" width="${sb}" height="${sb}" rx="4" style="fill:${ORANGE};stroke:${INK}"/>`+T(345,130+sb/2+5,"B","#fff",15)+
+      (a>0?svgArrow(80,110,150,110,GREEN,4)+svgArrow(385,130,385,180,GREEN,4)+T(115,128,"a",GREEN,15,"middle",true):"");
+    if(a<=0){ r.a.textContent="0"; r.T.textContent=fmt(B*g,2)+" N"; r.v.textContent="0"; vd.className="verdict mid"; vd.textContent="m_B·g ≤ μ·m_A·g → geseran cukup kuat, blok tak bergerak (anggap μs ≈ μk)."; return; }
+    const T_=B*(g-a); r.a.textContent=fmt(a,3)+" m/s²"; r.T.textContent=fmt(T_,2)+" N"; r.v.textContent=fmt(Math.sqrt(2*a*0.03),3)+" m/s";
+    vd.className="verdict ok"; vd.textContent="Blok bergerak. Tutorial S9 (2.25 kg, 1.30 kg, 0.450): v = 0.218 m/s, T = 11.7 N"; }
+};
+
+/* init widgets */
+$$(".widget").forEach(w=>{ const f=W[w.dataset.w]; if(f){ try{ f(w); }catch(e){ w.appendChild(h(`<p class="kv">Widget gagal dimuatkan.</p>`)); console.error(e); } } });
+
+/* start */
+const hm=location.hash.match(/^#bab([123])$/);
+const startCh=hm?+hm[1]:1;
+show(startCh,memo[startCh]||0,1);
+})();
+
+</script>
+</body>
+</html>
